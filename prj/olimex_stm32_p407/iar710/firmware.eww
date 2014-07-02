@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<workspace>
+  <project>
+    <path>$WS_DIR$\firmware.ewp</path>
+  </project>
+  <batchBuild>
+    <batchDefinition>
+      <name>Debug FLASH</name>
+      <member>
+        <project>hal</project>
+        <configuration>Debug</configuration>
+      </member>
+      <member>
+        <project>rtos</project>
+        <configuration>Debug</configuration>
+      </member>
+      <member>
+        <project>osal</project>
+        <configuration>Debug</configuration>
+      </member>
+      <member>
+        <project>firmware</project>
+        <configuration>Debug FLASH</configuration>
+      </member>
+    </batchDefinition>
+    <batchDefinition>
+      <name>Release FLASH</name>
+      <member>
+        <project>hal</project>
+        <configuration>Release</configuration>
+      </member>
+      <member>
+        <project>rtos</project>
+        <configuration>Release</configuration>
+      </member>
+      <member>
+        <project>osal</project>
+        <configuration>Release</configuration>
+      </member>
+      <member>
+        <project>firmware</project>
+        <configuration>Release FLASH</configuration>
+      </member>
+    </batchDefinition>
+    <batchDefinition>
+      <name>Debug SRAM</name>
+      <member>
+        <project>hal</project>
+        <configuration>Debug</configuration>
+      </member>
+      <member>
+        <project>rtos</project>
+        <configuration>Debug</configuration>
+      </member>
+      <member>
+        <project>osal</project>
+        <configuration>Debug</configuration>
+      </member>
+      <member>
+        <project>firmware</project>
+        <configuration>Debug SRAM</configuration>
+      </member>
+    </batchDefinition>
+    <batchDefinition>
+      <name>Release SRAM</name>
+      <member>
+        <project>hal</project>
+        <configuration>Release</configuration>
+      </member>
+      <member>
+        <project>rtos</project>
+        <configuration>Release</configuration>
+      </member>
+      <member>
+        <project>osal</project>
+        <configuration>Release</configuration>
+      </member>
+      <member>
+        <project>firmware</project>
+        <configuration>Release SRAM</configuration>
+      </member>
+    </batchDefinition>
+  </batchBuild>
+</workspace>
+
+
