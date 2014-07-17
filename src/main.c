@@ -7,7 +7,8 @@
 #include "osal.h"
 #include "os_task.h"
 #include "os_supervise.h"
-#include "crc8.h"
+#include "os_startup.h"
+#include "version.h"
 #ifdef TEST
 #include "test_main.h"
 #endif // TEST
@@ -16,24 +17,13 @@
 #define MDL_NAME    "main"
 
 //-----------------------------------------------------------------------------
-extern const OS_TaskConfig task_a_ko_cfg, task_b_ko_cfg;
-// Startup vector.
-const OS_TaskConfig* os_startup_v[] = {
-    &task_a_ko_cfg,
-    &task_b_ko_cfg,
-    OS_NULL
-};
+/// @brief          Init the device.
+/// @return         #Status.
+static Status       Init(void);
 
-//-----------------------------------------------------------------------------
-/// @brief      Init the device.
-/// @return     #Status.
-static Status   Init(void);
-
-/// @brief      Init the device applications.
-/// @return     #Status.
-static Status   APP_Init(void);
-
-static Status FirmwareVersionGet(void);
+/// @brief          Init the device applications.
+/// @return         #Status.
+static Status       APP_Init(void);
 
 /******************************************************************************/
 void main(void)
@@ -61,15 +51,20 @@ Status s;
 /******************************************************************************/
 Status APP_Init(void)
 {
+extern const OS_TaskConfig task_a_ko_cfg, task_b_ko_cfg;
 Status s = S_OK;
+    // Add application tasks to the system startup.
+    IF_STATUS(s = OS_StartupTaskAdd(&task_a_ko_cfg)) { return s; }
+    IF_STATUS(s = OS_StartupTaskAdd(&task_b_ko_cfg)) { return s; }
+
     D_LOG(D_INFO, "Application init...");
     D_LOG(D_INFO, "-------------------------------");
-    D_LOG(D_INFO, "Firmware: v%d.%d.%d.%d%s",
-                   ver_p->maj,
-                   ver_p->min,
-                   ver_p->bld,
-                   ver_p->rev,
-                   ver_lbl[ver_p->lbl]);
+    D_LOG(D_INFO, "Firmware: v%d.%d.%d%s-%s",
+                   version.maj,
+                   version.min,
+                   version.bld,
+                   ver_lbl[version.lbl],
+                   version.rev);
     D_LOG(D_INFO, "Built on: %s, %s", __DATE__, __TIME__);
     D_LOG(D_INFO, "-------------------------------");
 #ifdef OS_TEST
@@ -79,19 +74,4 @@ Status s = S_OK;
     D_LOG(D_INFO, "-------------------------------");
 #endif // OS_TEST
     return s;
-}
-
-/******************************************************************************/
-Status FirmwareVersionGet(void)
-{
-VersionApp* ver_p = &device_state.description.device_description.version;
-
-    memset((void*)&device_state, 0x0, sizeof(device_state));
-    // Static info description.
-    ver_p->maj = VERSION_MAJ;
-    ver_p->min = VERSION_MIN;
-    ver_p->bld = VERSION_BLD;
-    ver_p->rev = VERSION_REV;
-    ver_p->lbl = VERSION_LBL;
-    return S_OK;
 }

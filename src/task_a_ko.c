@@ -3,13 +3,9 @@
 * @brief   A-ko task.
 * @author  A. Filyanov
 *******************************************************************************/
-#ifndef NDEBUG
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "hal.h"
-#include "osal.h"
 #include "os_supervise.h"
 #include "os_message.h"
 #include "os_debug.h"
@@ -104,7 +100,7 @@ OS_Message* msg_p;
 volatile int debug = 0;
 Status s;
 
-U8 debug_count = 17;
+//U8 debug_count = 17;
 	for(;;) {
         IF_STATUS(s = OS_MessageReceive(task_args_p->stdin_qhd, &msg_p, OS_BLOCK)) {
             //OS_LOG_S(D_WARNING, s);
@@ -318,10 +314,8 @@ void ButtonWakeupHandler(TaskArgs* task_args_p)
 void ISR_ButtonWakeupHandler(void)
 {
     if (1 == OS_ISR_SIGNAL_EMIT(task_args.stdin_qhd,
-                                OS_SIGNAL_CREATE(OS_SIG_ISR, OS_EVENT_WAKEUP),
+                                OS_ISR_SIGNAL_CREATE(OS_SIG_ISR, OS_EVENT_WAKEUP),
                                 OS_MSG_PRIO_HIGH)) {
         OS_ContextSwitchForce();
     }
 }
-
-#endif // NDEBUG

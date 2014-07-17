@@ -2545,7 +2545,7 @@
       <name>BUILDACTION</name>
       <archiveVersion>1</archiveVersion>
       <data>
-        <prebuild>$PROJ_DIR$\..\..\..\ext\diOS\tls\revision_update.bat $PROJ_DIR$\..\..\..\src\target</prebuild>
+        <prebuild>$PROJ_DIR$\..\..\..\ext\diOS\tls\revision_update.bat $PROJ_DIR$\..\..\..\src</prebuild>
         <postbuild>xcopy /y "$PROJ_DIR$\Debug SRAM\Exe\*.bin" $PROJ_DIR$\..\..\..\bin</postbuild>
       </data>
     </settings>
