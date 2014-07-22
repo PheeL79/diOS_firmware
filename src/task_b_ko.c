@@ -81,7 +81,7 @@ const OS_Signal signal = OS_SIGNAL_CREATE(OS_SIG_APP, 0);
 //    OS_SIGNAL_EMIT(a_ko_qhd, signal, OS_MSG_PRIO_HIGH);
 //    OS_MessageSend(a_ko_qhd, msg_p, 100, OS_MSG_PRIO_NORMAL);
 
-//U8 debug_count = 6;
+U8 debug_count = (rand() % 6) + 1;
 task_args_p->blink_rate = 500;
 	for(;;) {
         IF_STATUS(OS_MessageReceive(stdio_in_qhd, &msg_p, task_args_p->blink_rate)) {

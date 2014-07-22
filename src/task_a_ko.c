@@ -100,9 +100,9 @@ OS_Message* msg_p;
 volatile int debug = 0;
 Status s;
 
-//U8 debug_count = 17;
+U8 debug_count = (rand() % 17) + 1;
 	for(;;) {
-        IF_STATUS(s = OS_MessageReceive(task_args_p->stdin_qhd, &msg_p, OS_BLOCK)) {
+        IF_STATUS(s = OS_MessageReceive(task_args_p->stdin_qhd, &msg_p, 400)) { //OS_BLOCK)) {
             //OS_LOG_S(D_WARNING, s);
         } else {
             if (OS_SIGNAL_IS(msg_p)) {
@@ -189,6 +189,7 @@ Status s = S_OK;
         case PWR_SHUTDOWN: {
             IF_STATUS(s = OS_TimerDelete(task_args_p->timer_power, OS_TIMEOUT_DEFAULT)) {
             }
+            task_args_p->timer_power = OS_NULL;
             IF_STATUS_OK(s = OS_DriverClose(task_args.drv_button_tamper)) {
                 IF_STATUS(s = OS_DriverDeInit(task_args.drv_button_tamper)) {
                 }
