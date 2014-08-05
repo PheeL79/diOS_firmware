@@ -29,10 +29,10 @@ static Status       APP_Init(void);
 void main(void)
 {
     // Init the device and it's applications.
-    IF_STATUS(Init()) { D_ASSERT(OS_FALSE); }
-    D_LOG(D_INFO, "OS scheduler start...");
+    IF_STATUS(Init()) { HAL_ASSERT(OS_FALSE); }
+    HAL_LOG(D_INFO, "OS scheduler start...");
     OS_SchedulerStart();
-    D_ASSERT(OS_FALSE);
+    HAL_ASSERT(OS_FALSE);
 }
 
 /******************************************************************************/
@@ -40,7 +40,7 @@ Status Init(void)
 {
 Status s;
     // Hardware init.
-    IF_STATUS(s = HAL_Init()) { return s; }
+    IF_STATUS(s = HAL_Init_()) { return s; }
     // OS init.
     IF_STATUS(s = OSAL_Init()){ return s; }
     // Application init.
@@ -57,21 +57,21 @@ Status s = S_OK;
     IF_STATUS(s = OS_StartupTaskAdd(&task_a_ko_cfg)) { return s; }
     IF_STATUS(s = OS_StartupTaskAdd(&task_b_ko_cfg)) { return s; }
 
-    D_LOG(D_INFO, "Application init...");
-    D_LOG(D_INFO, "-------------------------------");
-    D_LOG(D_INFO, "Firmware: v%d.%d.%d%s-%s",
+    HAL_LOG(D_INFO, "Application init...");
+    HAL_LOG(D_INFO, "-------------------------------");
+    HAL_LOG(D_INFO, "Firmware: v%d.%d.%d%s-%s",
                    version.maj,
                    version.min,
                    version.bld,
                    ver_lbl[version.lbl],
                    version.rev);
-    D_LOG(D_INFO, "Built on: %s, %s", __DATE__, __TIME__);
-    D_LOG(D_INFO, "-------------------------------");
+    HAL_LOG(D_INFO, "Built on: %s, %s", __DATE__, __TIME__);
+    HAL_LOG(D_INFO, "-------------------------------");
 #ifdef OS_TEST
     // Tests.
-    D_LOG(D_INFO, "Tests run...\n");
+    HAL_LOG(D_INFO, "Tests run...\n");
     TestsRun();
-    D_LOG(D_INFO, "-------------------------------");
+    HAL_LOG(D_INFO, "-------------------------------");
 #endif // OS_TEST
     return s;
 }

@@ -15,6 +15,7 @@
 #include "os_signal.h"
 #include "os_timer.h"
 #include "os_event.h"
+#include "os_environment.h"
 #include "drv_rtc.h"
 #include "task_a_ko.h"
 
@@ -100,9 +101,11 @@ OS_Message* msg_p;
 volatile int debug = 0;
 Status s;
 
+    task_args_p->drv_rtc = OS_DriverRtcGet();
+
 U8 debug_count = (rand() % 17) + 1;
 	for(;;) {
-        IF_STATUS(s = OS_MessageReceive(task_args_p->stdin_qhd, &msg_p, 400)) { //OS_BLOCK)) {
+        IF_STATUS(s = OS_MessageReceive(task_args_p->stdin_qhd, &msg_p, OS_BLOCK)) {
             //OS_LOG_S(D_WARNING, s);
         } else {
             if (OS_SIGNAL_IS(msg_p)) {
@@ -250,10 +253,26 @@ const OS_Signal signal = OS_SIGNAL_CREATE(OS_SIG_SHUTDOWN, 0);
 void ButtonTamperHandler(TaskArgs* task_args_p)
 {
     OS_LOG(D_WARNING, "Tamper event detected!");
+    IF_STATUS(OS_DriverIoCtl(task_args_p->drv_rtc, DRV_REQ_BUTTON_TAMPER_DISABLE, OS_NULL)) { OS_ASSERT(OS_FALSE); }
     //Wait for jitter to calm.
     OS_TaskDelay(100);
     //Remove jitter signals from the queue.
     OS_QueueFlush(task_args_p->stdin_qhd);
+//#ifndef NDEBUG
+//U32 size = 0x1000;
+//U8* data_p = OS_MallocEx(size, OS_MEM_RAM_INT_CCM);
+//HAL_RTC_BackupRegWrite io_args = {
+//    .reg = HAL_RTC_BKUP_REG_USER,
+//    .val = (U32)0xDEADBEEFUL
+//};
+//    OS_DriverIoCtl(task_args.drv_rtc, DRV_REQ_RTC_BKUP_REG_WRITE, &io_args);
+//    if (OS_NULL != data_p) {
+//        memset(data_p, (rand() % 0xFF), size);
+//        OS_DriverWrite(task_args.drv_rtc, data_p, size, OS_NULL);
+//    }
+//    OS_FreeEx(data_p, OS_MEM_RAM_INT_CCM);
+//#endif // NDEBUG
+    IF_STATUS(OS_DriverIoCtl(task_args_p->drv_rtc, DRV_REQ_BUTTON_TAMPER_ENABLE, OS_NULL)) { OS_ASSERT(OS_FALSE); }
 }
 
 /******************************************************************************/
@@ -275,21 +294,6 @@ void ButtonWakeupHandler(TaskArgs* task_args_p)
     } else {
         OS_LOG(D_INFO, "Wakeup button released");
     }
-//#ifndef NDEBUG
-//U32 size = 0x1000;
-//U8* data_p = OS_MallocEx(size, OS_MEM_RAM_INT_CCM);
-//HAL_RTC_BackupRegWrite io_args = {
-//    .reg = HAL_RTC_BKUP_REG_USER,
-//    .val = (U32)0xDEADBEEFUL
-//};
-//    OS_DriverIoCtl(task_args.drv_rtc, DRV_REQ_RTC_BKUP_REG_WRITE, &io_args);
-//    if (OS_NULL != data_p) {
-//        memset(data_p, (rand() % 0xFF), size);
-//        OS_DriverWrite(task_args.drv_rtc, data_p, size, OS_NULL);
-//    }
-//    OS_FreeEx(data_p, OS_MEM_RAM_INT_CCM);
-//#endif // NDEBUG
-
     OS_TimerStart(task_args_p->timer_power, 4000);
     //Wait for jitter to calm.
     OS_TaskDelay(10);

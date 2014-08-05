@@ -17,7 +17,7 @@ typedef enum {
 //-----------------------------------------------------------------------------
 static const Version version = {
     .maj    = 0,
-    .min    = 1,
+    .min    = 2,
     .bld    = 0,
     .rev    = REVISION,
     .lbl    = VER_LBL_ALPHA,

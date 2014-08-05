@@ -173,6 +173,7 @@
         <option>
           <name>CCDefines</name>
           <state>CM4F</state>
+          <state>STM32F407xx</state>
         </option>
         <option>
           <name>CCPreprocFile</name>
@@ -307,16 +308,17 @@
           <state>$PROJ_DIR$\..\..\..\ext\diOS\src</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\cfg</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\ext</state>
-          <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\csp\cm4\CMSIS\400\CMSIS\Include</state>
-          <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\csp\cm4\CMSIS\400\Device\ST\STM32F4xx\Include</state>
-          <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\csp\stm32f4xx\STM32_USB-Host-Device_Lib\210\Libraries\STM32F4xx_StdPeriph_Driver\inc</state>
+          <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\csp\cm4\CMSIS\401\CMSIS\Include</state>
+          <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\csp\cm4\CMSIS\401\CMSIS\Device\ST\STM32F4xx\Include</state>
+          <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\csp\stm32f4xx\STM32F4xx_HAL_Driver\110\Inc</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\freertos\800\Source\include</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\freertos\800\Source\portable\IAR\ARM_CM4F</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\cfg\freertos\800\cm4f</state>
-          <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\fat_fs\0.10a\src</state>
-          <state>$PROJ_DIR$\..\..\..\ext\diOS\cfg\fat_fs\0.10a\cm4f</state>
+          <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\fat_fs\0.10b\src</state>
+          <state>$PROJ_DIR$\..\..\..\ext\diOS\cfg\fat_fs\0.10b\cm4f</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\src\hal\csp\stm32f40xx</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\src\tst</state>
+          <state>$PROJ_DIR$\..\..\..\ext\diOS\cfg\olimex_stm32_p407</state>
         </option>
         <option>
           <name>CCStdIncCheck</name>
@@ -2081,6 +2083,7 @@
         <option>
           <name>CCDefines</name>
           <state>CM4F</state>
+          <state>STM32F407xx</state>
         </option>
         <option>
           <name>CCPreprocFile</name>
@@ -2215,16 +2218,17 @@
           <state>$PROJ_DIR$\..\..\..\ext\diOS\src</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\cfg</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\ext</state>
-          <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\csp\cm4\CMSIS\400\CMSIS\Include</state>
-          <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\csp\cm4\CMSIS\400\Device\ST\STM32F4xx\Include</state>
-          <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\csp\stm32f4xx\STM32_USB-Host-Device_Lib\210\Libraries\STM32F4xx_StdPeriph_Driver\inc</state>
+          <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\csp\cm4\CMSIS\401\CMSIS\Include</state>
+          <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\csp\cm4\CMSIS\401\CMSIS\Device\ST\STM32F4xx\Include</state>
+          <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\csp\stm32f4xx\STM32F4xx_HAL_Driver\110\Inc</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\freertos\800\Source\include</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\freertos\800\Source\portable\IAR\ARM_CM4F</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\cfg\freertos\800\cm4f</state>
-          <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\fat_fs\0.10a\src</state>
-          <state>$PROJ_DIR$\..\..\..\ext\diOS\cfg\fat_fs\0.10a\cm4f</state>
+          <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\fat_fs\0.10b\src</state>
+          <state>$PROJ_DIR$\..\..\..\ext\diOS\cfg\fat_fs\0.10b\cm4f</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\src\hal\csp\stm32f40xx</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\src\tst</state>
+          <state>$PROJ_DIR$\..\..\..\ext\diOS\cfg\olimex_stm32_p407</state>
         </option>
         <option>
           <name>CCStdIncCheck</name>

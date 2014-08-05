@@ -25,6 +25,7 @@ typedef struct {
     OS_EventHd  ehd;
     OS_QueueHd  a_ko_qhd;
     TimeMs      blink_rate;
+    S8          volume;
 } TaskArgs;
 
 static TaskArgs task_args = {
@@ -32,7 +33,8 @@ static TaskArgs task_args = {
     .drv_led_user   = OS_NULL,
     .ehd            = OS_NULL,
     .a_ko_qhd       = OS_NULL,
-    .blink_rate     = OS_BLOCK
+    .blink_rate     = OS_BLOCK,
+    .volume         = 1
 };
 
 //------------------------------------------------------------------------------
@@ -45,7 +47,7 @@ const OS_TaskConfig task_b_ko_cfg = {
     .timeout    = 1,
     .prio_init  = OS_TASK_PRIO_BELOW_NORMAL,
     .prio_power = OS_PWR_PRIO_DEFAULT + 3,
-    .stack_size = OS_STACK_SIZE_MIN,
+    .stack_size = OS_STACK_SIZE_MIN * 2,
     .stdin_len  = OS_STDIO_LEN,
     .stdout_len = OS_STDIO_LEN
 };
@@ -67,7 +69,6 @@ Status s;
     return s;
 }
 
-const S8 volume = 1;
 /******************************************************************************/
 void OS_TaskMain(OS_TaskArgs* args_p)
 {
@@ -139,9 +140,9 @@ Status s = S_OK;
             IF_STATUS(s = OS_EventDelete(task_args_p->ehd, OS_TIMEOUT_DEFAULT)) {
                 OS_LOG_S(D_WARNING, s);
             }
-//            IF_STATUS(s = OS_FileSystemMediaDeInit(volume)) {
-//                OS_LOG_S(D_WARNING, s);
-//            }
+            IF_STATUS(s = OS_FileSystemMediaDeInit(task_args_p->volume)) {
+                OS_LOG_S(D_WARNING, s);
+            }
             IF_STATUS_OK(s = OS_DriverClose(task_args.drv_led_user)) {
                 IF_STATUS(s = OS_DriverDeInit(task_args.drv_led_user)) {
                 }
@@ -157,12 +158,12 @@ Status s = S_OK;
             } else {
                 s = (S_INIT == s) ? S_OK : s;
             }
-//            IF_STATUS_OK(OS_FileSystemMediaInit(volume)) {
-//                IF_STATUS_OK(OS_FileSystemMount(volume)) {
-//                    ConstStrPtr config_path_p = OS_EnvVariableGet("config_file");
-//                    Str value[OS_SETTINGS_VALUE_LEN];
-//                    OS_SettingsRead(config_path_p, "Second", "blink_rate", &value[0]);
-//                    task_args_p->blink_rate = (TimeMs)strtoul((const char*)&value[0], OS_NULL, 10);
+            IF_STATUS_OK(OS_FileSystemMediaInit(task_args_p->volume)) {
+                IF_STATUS_OK(OS_FileSystemMount(task_args_p->volume)) {
+                    ConstStrPtr config_path_p = OS_EnvVariableGet("config_file");
+                    Str value[OS_SETTINGS_VALUE_LEN];
+                    OS_SettingsRead(config_path_p, "Second", "blink_rate", &value[0]);
+                    task_args_p->blink_rate = (TimeMs)strtoul((const char*)&value[0], OS_NULL, 10);
 
 //                    OS_SettingsRead(config_path_p, "First", "Val", &value[0]);
 //                    OS_SettingsDelete(config_path_p, "Second", OS_NULL);
@@ -180,8 +181,8 @@ Status s = S_OK;
 //                        OS_FileClose(&test_file);
 //                    }
 
-//                }
-//            }
+                }
+            }
             ConstStr* task_name_server = "A-ko";
             const OS_TaskHd a_ko_thd = OS_TaskByNameGet(task_name_server);
             task_args_p->a_ko_qhd = OS_TaskStdIoGet(a_ko_thd, OS_STDIO_IN);
