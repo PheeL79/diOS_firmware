@@ -1061,7 +1061,7 @@
         </option>
         <option>
           <name>GenLowLevelInterface</name>
-          <state>1</state>
+          <state>0</state>
         </option>
         <option>
           <name>GEndianModeBE</name>
@@ -1101,7 +1101,7 @@
         <option>
           <name>GBECoreSlave</name>
           <version>20</version>
-          <state>39</state>
+          <state>40</state>
         </option>
         <option>
           <name>OGUseCmsis</name>
@@ -2898,7 +2898,7 @@
         <option>
           <name>Variant</name>
           <version>20</version>
-          <state>39</state>
+          <state>40</state>
         </option>
         <option>
           <name>GEndianMode</name>
@@ -2955,7 +2955,7 @@
         </option>
         <option>
           <name>OGLastSavedByProductVersion</name>
-          <state>6.50.6.4952</state>
+          <state>7.10.3.6927</state>
         </option>
         <option>
           <name>GeneralEnableMisra</name>
@@ -2971,7 +2971,7 @@
         </option>
         <option>
           <name>GenLowLevelInterface</name>
-          <state>1</state>
+          <state>0</state>
         </option>
         <option>
           <name>GEndianModeBE</name>
@@ -3006,12 +3006,12 @@
         <option>
           <name>GFPUCoreSlave</name>
           <version>20</version>
-          <state>39</state>
+          <state>40</state>
         </option>
         <option>
           <name>GBECoreSlave</name>
           <version>20</version>
-          <state>39</state>
+          <state>40</state>
         </option>
         <option>
           <name>OGUseCmsis</name>

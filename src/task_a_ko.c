@@ -78,6 +78,7 @@ Status s;
         const OS_DriverConfig drv_cfg = {
             .name       = "BTAMPER",
             .itf_p      = drv_button_v[DRV_ID_BUTTON_TAMPER],
+            .mode_io    = DRV_MODE_IO_DEFAULT,
             .prio_power = OS_PWR_PRIO_DEFAULT
         };
         IF_STATUS(s = OS_DriverCreate(&drv_cfg, (OS_DriverHd*)&task_args_p->drv_button_tamper)) { return s; }
@@ -86,6 +87,7 @@ Status s;
         const OS_DriverConfig drv_cfg = {
             .name       = "BWAKEUP",
             .itf_p      = drv_button_v[DRV_ID_BUTTON_WAKEUP],
+            .mode_io    = DRV_MODE_IO_DEFAULT,
             .prio_power = OS_PWR_PRIO_DEFAULT
         };
         IF_STATUS(s = OS_DriverCreate(&drv_cfg, (OS_DriverHd*)&task_args_p->drv_button_wakeup)) { return s; }
