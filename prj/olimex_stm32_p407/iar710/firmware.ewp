@@ -313,9 +313,9 @@
           <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\csp\stm32f4xx\STM32F4xx_HAL_Driver\110\Inc</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\freertos\800\Source\include</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\freertos\800\Source\portable\IAR\ARM_CM4F</state>
-          <state>$PROJ_DIR$\..\..\..\ext\diOS\cfg\freertos\800\cm4f</state>
+          <state>$PROJ_DIR$\..\..\..\ext\diOS\cfg\freertos\800</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\fat_fs\0.10b\src</state>
-          <state>$PROJ_DIR$\..\..\..\ext\diOS\cfg\fat_fs\0.10b\cm4f</state>
+          <state>$PROJ_DIR$\..\..\..\ext\diOS\cfg\fat_fs\0.10b</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\src\hal\csp\stm32f40xx</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\src\tst</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\cfg\olimex_stm32_p407</state>
@@ -639,7 +639,7 @@
       <name>BUILDACTION</name>
       <archiveVersion>1</archiveVersion>
       <data>
-        <prebuild>$PROJ_DIR$\..\..\..\ext\diOS\tls\revision_update.bat $PROJ_DIR$\..\..\..\src\target</prebuild>
+        <prebuild>$PROJ_DIR$\..\..\..\ext\diOS\tls\revision_update.bat $PROJ_DIR$\..\..\..\src</prebuild>
         <postbuild>xcopy /y "$PROJ_DIR$\Debug FLASH\Exe\*.bin" $PROJ_DIR$\..\..\..\bin</postbuild>
       </data>
     </settings>

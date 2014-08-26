@@ -65,8 +65,7 @@ const OS_TaskConfig task_a_ko_cfg = {
     .prio_init  = OS_TASK_PRIO_NORMAL,
     .prio_power = OS_PWR_PRIO_DEFAULT + 5,
     .stack_size = OS_STACK_SIZE_MIN,
-    .stdin_len  = OS_STDIO_LEN,
-    .stdout_len = OS_STDIO_LEN
+    .stdin_len  = OS_STDIO_LEN
 };
 
 /******************************************************************************/
@@ -78,7 +77,6 @@ Status s;
         const OS_DriverConfig drv_cfg = {
             .name       = "BTAMPER",
             .itf_p      = drv_button_v[DRV_ID_BUTTON_TAMPER],
-            .mode_io    = DRV_MODE_IO_DEFAULT,
             .prio_power = OS_PWR_PRIO_DEFAULT
         };
         IF_STATUS(s = OS_DriverCreate(&drv_cfg, (OS_DriverHd*)&task_args_p->drv_button_tamper)) { return s; }
@@ -87,7 +85,6 @@ Status s;
         const OS_DriverConfig drv_cfg = {
             .name       = "BWAKEUP",
             .itf_p      = drv_button_v[DRV_ID_BUTTON_WAKEUP],
-            .mode_io    = DRV_MODE_IO_DEFAULT,
             .prio_power = OS_PWR_PRIO_DEFAULT
         };
         IF_STATUS(s = OS_DriverCreate(&drv_cfg, (OS_DriverHd*)&task_args_p->drv_button_wakeup)) { return s; }
@@ -112,7 +109,7 @@ U8 debug_count = (rand() % 17) + 1;
         } else {
             if (OS_SIGNAL_IS(msg_p)) {
                 switch (OS_SIGNAL_ID_GET(msg_p)) {
-                    case OS_SIG_ISR:
+                    case OS_SIG_DRV:
                         switch (OS_SIGNAL_DATA_GET(msg_p)) {
                             case OS_EVENT_TAMPER:
                                 ButtonTamperHandler(task_args_p);
@@ -211,7 +208,7 @@ Status s = S_OK;
             break;
         case PWR_ON: {
             if (OS_NULL == task_args_p->timer_power) {
-                task_args_p->stdin_qhd = OS_TaskStdIoGet(OS_TaskByNameGet(task_a_ko_cfg.name), OS_STDIO_IN);
+                task_args_p->stdin_qhd = OS_TaskStdInGet(OS_TaskByNameGet(task_a_ko_cfg.name));
                 static ConstStrPtr tim_name_p = "PowerOff";
                 const OS_TimerConfig tim_cfg = {
                     .name_p = tim_name_p,
@@ -224,13 +221,13 @@ Status s = S_OK;
                     return s;
                 }
             }
-            IF_STATUS_OK(s = OS_DriverInit(task_args.drv_button_tamper)) {
+            IF_STATUS_OK(s = OS_DriverInit(task_args.drv_button_tamper, OS_NULL)) {
                 IF_STATUS(s = OS_DriverOpen(task_args.drv_button_tamper, (void*)ISR_ButtonTamperHandler)) {
                 }
             } else {
                 s = (S_INIT == s) ? S_OK : s;
             }
-            IF_STATUS_OK(s = OS_DriverInit(task_args.drv_button_wakeup)) {
+            IF_STATUS_OK(s = OS_DriverInit(task_args.drv_button_wakeup, OS_NULL)) {
                 IF_STATUS(s = OS_DriverOpen(task_args.drv_button_wakeup, (void*)ISR_ButtonWakeupHandler)) {
                 }
             } else {
@@ -248,7 +245,7 @@ Status s = S_OK;
 void TimerPowerHandler(TaskArgs* task_args_p)
 {
 const OS_Signal signal = OS_SIGNAL_CREATE(OS_SIG_SHUTDOWN, 0);
-    OS_SIGNAL_EMIT(OS_TaskSvcStdInGet(), signal, OS_MSG_PRIO_HIGH);
+    OS_SIGNAL_SEND(OS_TaskSvStdInGet(), signal, OS_MSG_PRIO_HIGH);
 }
 
 /******************************************************************************/
@@ -280,8 +277,8 @@ void ButtonTamperHandler(TaskArgs* task_args_p)
 /******************************************************************************/
 void ISR_ButtonTamperHandler(void)
 {
-    if (1 == OS_ISR_SIGNAL_EMIT(task_args.stdin_qhd,
-                                OS_SIGNAL_CREATE(OS_SIG_ISR, OS_EVENT_TAMPER),
+    if (1 == OS_ISR_SIGNAL_SEND(task_args.stdin_qhd,
+                                OS_SIGNAL_CREATE(OS_SIG_DRV, OS_EVENT_TAMPER),
                                 OS_MSG_PRIO_HIGH)) {
         OS_ContextSwitchForce();
     }
@@ -320,8 +317,8 @@ void ButtonWakeupHandler(TaskArgs* task_args_p)
 /******************************************************************************/
 void ISR_ButtonWakeupHandler(void)
 {
-    if (1 == OS_ISR_SIGNAL_EMIT(task_args.stdin_qhd,
-                                OS_ISR_SIGNAL_CREATE(OS_SIG_ISR, OS_EVENT_WAKEUP),
+    if (1 == OS_ISR_SIGNAL_SEND(task_args.stdin_qhd,
+                                OS_ISR_SIGNAL_CREATE(DRV_ID_BUTTON_WAKEUP, OS_SIG_DRV, OS_EVENT_WAKEUP),
                                 OS_MSG_PRIO_HIGH)) {
         OS_ContextSwitchForce();
     }

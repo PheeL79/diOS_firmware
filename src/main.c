@@ -60,11 +60,11 @@ Status s = S_OK;
     HAL_LOG(D_INFO, "Application init...");
     HAL_LOG(D_INFO, "-------------------------------");
     HAL_LOG(D_INFO, "Firmware: v%d.%d.%d%s-%s",
-                   version.maj,
-                   version.min,
-                   version.bld,
-                   ver_lbl[version.lbl],
-                   version.rev);
+                    version.maj,
+                    version.min,
+                    version.bld,
+                    ver_lbl[version.lbl],
+                    version.rev);
     HAL_LOG(D_INFO, "Built on: %s, %s", __DATE__, __TIME__);
     HAL_LOG(D_INFO, "-------------------------------");
 #ifdef OS_TEST

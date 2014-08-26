@@ -16,11 +16,11 @@ typedef enum {
 
 //-----------------------------------------------------------------------------
 static const Version version = {
-    .maj    = 0,
-    .min    = 2,
-    .bld    = 0,
-    .rev    = REVISION,
-    .lbl    = VER_LBL_ALPHA,
+    .maj = 0,
+    .min = 2,
+    .bld = BUILD,
+    .rev = REVISION,
+    .lbl = VER_LBL_ALPHA,
 };
 
 static const char ver_lbl[8][4] =

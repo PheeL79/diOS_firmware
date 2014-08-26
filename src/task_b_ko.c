@@ -15,28 +15,33 @@
 #include "os_signal.h"
 #include "os_settings.h"
 #include "os_environment.h"
+#include "os_usb.h"
 #include "task_b_ko.h"
 
 //-----------------------------------------------------------------------------
 //Task arguments
 typedef struct {
-    OS_FileSystemMediaHd    fs_media_hd;
+    OS_FileSystemMediaHd    fs_sd_hd;
+    OS_FileSystemMediaHd    fs_usb_hd;
     OS_QueueHd              stdin_qhd;
     OS_DriverHd             drv_led_user;
     OS_EventHd              ehd;
     OS_QueueHd              a_ko_qhd;
     TimeMs                  blink_rate;
-    S8                      volume;
+    U8                      volume_sd;
+    U8                      volume_usb;
 } TaskArgs;
 
 static TaskArgs task_args = {
-    .fs_media_hd    = OS_NULL,
+    .fs_sd_hd       = OS_NULL,
+    .fs_usb_hd      = OS_NULL,
     .stdin_qhd      = OS_NULL,
     .drv_led_user   = OS_NULL,
     .ehd            = OS_NULL,
     .a_ko_qhd       = OS_NULL,
     .blink_rate     = OS_BLOCK,
-    .volume         = 1
+    .volume_sd      = 1,
+    .volume_usb     = 2,
 };
 
 //------------------------------------------------------------------------------
@@ -50,8 +55,7 @@ const OS_TaskConfig task_b_ko_cfg = {
     .prio_init  = OS_TASK_PRIO_BELOW_NORMAL,
     .prio_power = OS_PWR_PRIO_DEFAULT + 3,
     .stack_size = OS_STACK_SIZE_MIN * 2,
-    .stdin_len  = OS_STDIO_LEN,
-    .stdout_len = OS_STDIO_LEN
+    .stdin_len  = OS_STDIO_LEN
 };
 
 //------------------------------------------------------------------------------
@@ -66,24 +70,35 @@ Status s;
         const OS_DriverConfig drv_cfg = {
             .name       = "LED_USR",
             .itf_p      = drv_led_v[DRV_ID_LED_USER],
-            .mode_io    = DRV_MODE_IO_DEFAULT,
             .prio_power = OS_PWR_PRIO_DEFAULT
         };
         IF_STATUS(s = OS_DriverCreate(&drv_cfg, (OS_DriverHd*)&task_args_p->drv_led_user)) { return s; }
     }
     {
         OS_DriverConfig drv_cfg = {
-            .name       = "SDIO",
-            .itf_p      = drv_sdio_v[DRV_ID_SDIO],
-            .mode_io    = SD_SDIO_MODE_IO,
+            .name       = "SDIO_SD",
+            .itf_p      = drv_sdio_v[DRV_ID_SDIO_SD],
             .prio_power = OS_PWR_PRIO_DEFAULT
         };
         const OS_FileSystemMediaConfig fs_media_cfg = {
             .name       = "SD Card",
             .drv_cfg_p  = &drv_cfg,
-            .volume     = task_args_p->volume
+            .volume     = task_args_p->volume_sd
         };
-        IF_STATUS_OK(OS_FileSystemMediaCreate(&fs_media_cfg, &task_args_p->fs_media_hd)) { return s; }
+        IF_STATUS(OS_FileSystemMediaCreate(&fs_media_cfg, &task_args_p->fs_sd_hd)) { return s; }
+    }
+    {
+        OS_DriverConfig drv_cfg = {
+            .name       = "USBH_MSC",
+            .itf_p      = drv_usbh_v[DRV_ID_USBH_MSC],
+            .prio_power = OS_PWR_PRIO_DEFAULT
+        };
+        const OS_FileSystemMediaConfig fs_media_cfg = {
+            .name       = "USB Flash",
+            .drv_cfg_p  = &drv_cfg,
+            .volume     = task_args_p->volume_usb
+        };
+        IF_STATUS(OS_FileSystemMediaCreate(&fs_media_cfg, &task_args_p->fs_usb_hd)) { return s; }
     }
     return s;
 }
@@ -93,11 +108,14 @@ void OS_TaskMain(OS_TaskArgs* args_p)
 {
 TaskArgs* task_args_p = (TaskArgs*)args_p;
 State led_state = OFF;
-const OS_QueueHd stdio_in_qhd = OS_TaskStdIoGet(OS_THIS_TASK, OS_STDIO_IN);
+const OS_QueueHd stdio_in_qhd = OS_TaskStdInGet(OS_THIS_TASK);
+const OS_TaskHd usbhd_thd = OS_TaskByNameGet("UsbHostD");
+const OS_SignalSrc usbhd_tid = OS_TaskIdGet(usbhd_thd);
 OS_Message* msg_p;// = OS_MessageCreate(OS_MSG_APP, sizeof(task_args), OS_BLOCK, &task_args);
 volatile int debug = 0;
 const OS_Signal signal = OS_SIGNAL_CREATE(OS_SIG_APP, 0);
 
+    OS_ASSERT(S_OK == OS_TasksConnect(usbhd_thd, OS_THIS_TASK));
 //    OS_SIGNAL_EMIT(a_ko_qhd, signal, OS_MSG_PRIO_HIGH);
 //    OS_MessageSend(a_ko_qhd, msg_p, 100, OS_MSG_PRIO_NORMAL);
 
@@ -108,13 +126,37 @@ U8 debug_count = (rand() % 6) + 1;
             //OS_LOG_S(D_WARNING, S_UNDEF_MSG);
         } else {
             if (OS_SIGNAL_IS(msg_p)) {
-                switch (OS_SIGNAL_ID_GET(msg_p)) {
-                    case OS_SIG_APP:
-                        debug = OS_SIGNAL_DATA_GET(msg_p);
-                        break;
-                    default:
-                        OS_LOG_S(D_DEBUG, S_UNDEF_SIG);
-                        break;
+                if (usbhd_tid == OS_SIGNAL_SRC_GET(msg_p)) {
+                    switch (OS_SIGNAL_ID_GET(msg_p)) {
+                        case OS_SIG_USB_CONNECT:
+                            break;
+                        case OS_SIG_USB_READY:
+                            if (!OS_STRCMP(OS_EnvVariableGet("media_automount"), "on")) {
+                                if (OS_USB_CLASS_MSC == OS_SIGNAL_DATA_GET(msg_p)) {
+                                    IF_STATUS_OK(OS_FileSystemMount(task_args_p->fs_usb_hd)) {
+                                    }
+                                }
+                            }
+                            break;
+                        case OS_SIG_USB_DISCONNECT:
+                            if (OS_USB_CLASS_MSC == OS_SIGNAL_DATA_GET(msg_p)) {
+                                IF_STATUS_OK(OS_FileSystemUnMount(task_args_p->fs_usb_hd)) {
+                                }
+                            }
+                            break;
+                        default:
+                            OS_LOG_S(D_DEBUG, S_UNDEF_SIG);
+                            break;
+                    }
+                } else {
+                    switch (OS_SIGNAL_ID_GET(msg_p)) {
+                        case OS_SIG_APP:
+                            debug = OS_SIGNAL_DATA_GET(msg_p);
+                            break;
+                        default:
+                            OS_LOG_S(D_DEBUG, S_UNDEF_SIG);
+                            break;
+                    }
                 }
             } else {
                 switch (msg_p->id) {
@@ -152,34 +194,36 @@ Status s = S_OK;
         case PWR_STARTUP:
             IF_STATUS(s = OS_TaskInit(args_p)) {
             }
-            break;
-        case PWR_OFF:
-        case PWR_STOP:
-        case PWR_SHUTDOWN: {
-            IF_STATUS(s = OS_EventDelete(task_args_p->ehd, OS_TIMEOUT_DEFAULT)) {
-                OS_LOG_S(D_WARNING, s);
-            }
-            IF_STATUS(s = OS_FileSystemMediaDeInit(task_args_p->fs_media_hd)) {
-                OS_LOG_S(D_WARNING, s);
-            }
-            IF_STATUS_OK(s = OS_DriverClose(task_args.drv_led_user)) {
-                IF_STATUS(s = OS_DriverDeInit(task_args.drv_led_user)) {
-                }
-            } else {
-                s = (S_INIT == s) ? S_OK : s;
-            }
-            }
-            break;
-        case PWR_ON: {
-            IF_STATUS_OK(s = OS_DriverInit(task_args.drv_led_user)) {
+            IF_STATUS_OK(s = OS_DriverInit(task_args.drv_led_user, OS_NULL)) {
                 IF_STATUS(s = OS_DriverOpen(task_args.drv_led_user, OS_NULL)) {
                 }
             } else {
                 s = (S_INIT == s) ? S_OK : s;
             }
-
-            IF_STATUS_OK(OS_FileSystemMediaInit(task_args_p->fs_media_hd)) {
-                IF_STATUS_OK(OS_FileSystemMount(task_args_p->fs_media_hd)) {
+            break;
+        case PWR_OFF:
+        case PWR_STOP:
+        case PWR_SHUTDOWN: {
+//            IF_STATUS(s = OS_EventDelete(task_args_p->ehd, OS_TIMEOUT_DEFAULT)) {
+//                OS_LOG_S(D_WARNING, s);
+//            }
+            IF_STATUS(s = OS_FileSystemMediaDeInit(task_args_p->fs_sd_hd)) {
+                OS_LOG_S(D_WARNING, s);
+            }
+            IF_STATUS(s = OS_FileSystemMediaDeInit(task_args_p->fs_usb_hd)) {
+                OS_LOG_S(D_WARNING, s);
+            }
+//            IF_STATUS_OK(s = OS_DriverClose(task_args.drv_led_user)) {
+//                IF_STATUS(s = OS_DriverDeInit(task_args.drv_led_user)) {
+//                }
+//            } else {
+//                s = (S_INIT == s) ? S_OK : s;
+//            }
+            }
+            break;
+        case PWR_ON: {
+            IF_STATUS_OK(OS_FileSystemMediaInit(task_args_p->fs_sd_hd)) {
+                IF_STATUS_OK(OS_FileSystemMount(task_args_p->fs_sd_hd)) {
                     ConstStrPtr config_path_p = OS_EnvVariableGet("config_file");
                     Str value[OS_SETTINGS_VALUE_LEN];
                     OS_SettingsRead(config_path_p, "Second", "blink_rate", &value[0]);
@@ -203,12 +247,14 @@ Status s = S_OK;
 
                 }
             }
-            ConstStr* task_name_server = "A-ko";
-            const OS_TaskHd a_ko_thd = OS_TaskByNameGet(task_name_server);
-            task_args_p->a_ko_qhd = OS_TaskStdIoGet(a_ko_thd, OS_STDIO_IN);
-            IF_STATUS(EventCreate(task_args_p->a_ko_qhd, &task_args_p->ehd)) {
-                OS_ASSERT(OS_FALSE);
+            IF_STATUS_OK(OS_FileSystemMediaInit(task_args_p->fs_usb_hd)) {
             }
+//            ConstStr* task_name_server = "A-ko";
+//            const OS_TaskHd a_ko_thd = OS_TaskByNameGet(task_name_server);
+//            task_args_p->a_ko_qhd = OS_TaskStdIoGet(a_ko_thd, OS_STDIO_IN);
+//            IF_STATUS(EventCreate(task_args_p->a_ko_qhd, &task_args_p->ehd)) {
+//                OS_ASSERT(OS_FALSE);
+//            }
             }
             break;
         default:
