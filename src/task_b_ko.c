@@ -22,26 +22,30 @@
 //Task arguments
 typedef struct {
     OS_FileSystemMediaHd    fs_sd_hd;
-    OS_FileSystemMediaHd    fs_usb_hd;
+    OS_FileSystemMediaHd    fs_usb_fs_hd;
+    OS_FileSystemMediaHd    fs_usb_hs_hd;
     OS_QueueHd              stdin_qhd;
     OS_DriverHd             drv_led_user;
     OS_EventHd              ehd;
     OS_QueueHd              a_ko_qhd;
     TimeMs                  blink_rate;
     U8                      volume_sd;
-    U8                      volume_usb;
+    U8                      volume_usb_fs;
+    U8                      volume_usb_hs;
 } TaskArgs;
 
 static TaskArgs task_args = {
     .fs_sd_hd       = OS_NULL,
-    .fs_usb_hd      = OS_NULL,
+    .fs_usb_fs_hd   = OS_NULL,
+    .fs_usb_hs_hd   = OS_NULL,
     .stdin_qhd      = OS_NULL,
     .drv_led_user   = OS_NULL,
     .ehd            = OS_NULL,
     .a_ko_qhd       = OS_NULL,
     .blink_rate     = OS_BLOCK,
     .volume_sd      = 1,
-    .volume_usb     = 2,
+    .volume_usb_fs  = 2,
+    .volume_usb_hs  = 3,
 };
 
 //------------------------------------------------------------------------------
@@ -87,19 +91,36 @@ Status s;
         };
         IF_STATUS(OS_FileSystemMediaCreate(&fs_media_cfg, &task_args_p->fs_sd_hd)) { return s; }
     }
+#if (1 == USBH_FS_ENABLED)
     {
         OS_DriverConfig drv_cfg = {
-            .name       = "USBH_MSC",
-            .itf_p      = drv_usbh_v[DRV_ID_USBH_MSC],
+            .name       = "UH_FS_MSC",
+            .itf_p      = drv_usbh_v[DRV_ID_USBH_FS_MSC],
             .prio_power = OS_PWR_PRIO_DEFAULT
         };
         const OS_FileSystemMediaConfig fs_media_cfg = {
             .name       = "USB Flash",
             .drv_cfg_p  = &drv_cfg,
-            .volume     = task_args_p->volume_usb
+            .volume     = task_args_p->volume_usb_fs
         };
-        IF_STATUS(OS_FileSystemMediaCreate(&fs_media_cfg, &task_args_p->fs_usb_hd)) { return s; }
+        IF_STATUS(OS_FileSystemMediaCreate(&fs_media_cfg, &task_args_p->fs_usb_fs_hd)) { return s; }
     }
+#endif // USBH_FS_ENABLED
+#if (1 == USBH_HS_ENABLED)
+    {
+        OS_DriverConfig drv_cfg = {
+            .name       = "UH_HS_MSC",
+            .itf_p      = drv_usbh_v[DRV_ID_USBH_HS_MSC],
+            .prio_power = OS_PWR_PRIO_DEFAULT
+        };
+        const OS_FileSystemMediaConfig fs_media_cfg = {
+            .name       = "USB Flash",
+            .drv_cfg_p  = &drv_cfg,
+            .volume     = task_args_p->volume_usb_hs
+        };
+        IF_STATUS(OS_FileSystemMediaCreate(&fs_media_cfg, &task_args_p->fs_usb_hs_hd)) { return s; }
+    }
+#endif // USBH_HS_ENABLED
     return s;
 }
 
@@ -127,20 +148,31 @@ U8 debug_count = (rand() % 6) + 1;
         } else {
             if (OS_SIGNAL_IS(msg_p)) {
                 if (usbhd_tid == OS_SIGNAL_SRC_GET(msg_p)) {
+                    const OS_SignalData sig_data = OS_SIGNAL_DATA_GET(msg_p);
+                    const U8 usbh_itf_id = OS_USBH_SIG_ITF_GET(sig_data);
+                    const U8 usbh_msg_id = OS_USBH_SIG_MSG_GET(sig_data);
+                    OS_FileSystemMediaHd fs_usb_hd;
+
+                    if (USBH_ID_FS == usbh_itf_id) {
+                        fs_usb_hd = task_args_p->fs_usb_fs_hd;
+                    } else if (USBH_ID_HS == usbh_itf_id) {
+                        fs_usb_hd = task_args_p->fs_usb_hs_hd;
+                    } else { OS_ASSERT(OS_FALSE); }
+
                     switch (OS_SIGNAL_ID_GET(msg_p)) {
                         case OS_SIG_USB_CONNECT:
                             break;
                         case OS_SIG_USB_READY:
                             if (!OS_STRCMP(OS_EnvVariableGet("media_automount"), "on")) {
-                                if (OS_USB_CLASS_MSC == OS_SIGNAL_DATA_GET(msg_p)) {
-                                    IF_STATUS_OK(OS_FileSystemMount(task_args_p->fs_usb_hd)) {
+                                if (OS_USB_CLASS_MSC == usbh_msg_id) {
+                                    IF_STATUS_OK(OS_FileSystemMount(fs_usb_hd)) {
                                     }
                                 }
                             }
                             break;
                         case OS_SIG_USB_DISCONNECT:
-                            if (OS_USB_CLASS_MSC == OS_SIGNAL_DATA_GET(msg_p)) {
-                                IF_STATUS_OK(OS_FileSystemUnMount(task_args_p->fs_usb_hd)) {
+                            if (OS_USB_CLASS_MSC == usbh_msg_id) {
+                                IF_STATUS_OK(OS_FileSystemUnMount(fs_usb_hd)) {
                                 }
                             }
                             break;
@@ -210,7 +242,10 @@ Status s = S_OK;
             IF_STATUS(s = OS_FileSystemMediaDeInit(task_args_p->fs_sd_hd)) {
                 OS_LOG_S(D_WARNING, s);
             }
-            IF_STATUS(s = OS_FileSystemMediaDeInit(task_args_p->fs_usb_hd)) {
+            IF_STATUS(s = OS_FileSystemMediaDeInit(task_args_p->fs_usb_fs_hd)) {
+                OS_LOG_S(D_WARNING, s);
+            }
+            IF_STATUS(s = OS_FileSystemMediaDeInit(task_args_p->fs_usb_hs_hd)) {
                 OS_LOG_S(D_WARNING, s);
             }
 //            IF_STATUS_OK(s = OS_DriverClose(task_args.drv_led_user)) {
@@ -247,7 +282,9 @@ Status s = S_OK;
 
                 }
             }
-            IF_STATUS_OK(OS_FileSystemMediaInit(task_args_p->fs_usb_hd)) {
+            IF_STATUS_OK(OS_FileSystemMediaInit(task_args_p->fs_usb_fs_hd)) {
+            }
+            IF_STATUS_OK(OS_FileSystemMediaInit(task_args_p->fs_usb_hs_hd)) {
             }
 //            ConstStr* task_name_server = "A-ko";
 //            const OS_TaskHd a_ko_thd = OS_TaskByNameGet(task_name_server);

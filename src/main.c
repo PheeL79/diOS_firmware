@@ -40,11 +40,11 @@ Status Init(void)
 {
 Status s;
     // Hardware init.
-    IF_STATUS(s = HAL_Init_()) { return s; }
+    IF_STATUS(s = HAL_Init_())  { return s; }
     // OS init.
-    IF_STATUS(s = OSAL_Init()){ return s; }
+    IF_STATUS(s = OSAL_Init())  { return s; }
     // Application init.
-    IF_STATUS(s = APP_Init()) { return s; }
+    IF_STATUS(s = APP_Init())   { return s; }
     return s;
 }
 
