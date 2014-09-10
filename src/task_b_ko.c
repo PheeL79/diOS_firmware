@@ -55,11 +55,11 @@ const OS_TaskConfig task_b_ko_cfg = {
     .func_power = OS_TaskPower,
     .args_p     = (void*)&task_args,
     .attrs      = BIT(OS_TASK_ATTR_RECREATE),
-    .timeout    = 1,
-    .prio_init  = OS_TASK_PRIO_BELOW_NORMAL,
+    .timeout    = 4,
+    .prio_init  = OS_TASK_PRIO_NORMAL,
     .prio_power = OS_PWR_PRIO_DEFAULT + 3,
-    .stack_size = OS_STACK_SIZE_MIN * 2,
-    .stdin_len  = OS_STDIO_LEN
+    .stack_size = OS_STACK_SIZE_MIN * 3,
+    .stdin_len  = 64
 };
 
 //------------------------------------------------------------------------------
@@ -94,7 +94,7 @@ Status s;
 #if (1 == USBH_FS_ENABLED)
     {
         OS_DriverConfig drv_cfg = {
-            .name       = "UH_FS_MSC",
+            .name       = "UHFS_MSC",
             .itf_p      = drv_usbh_v[DRV_ID_USBH_FS_MSC],
             .prio_power = OS_PWR_PRIO_DEFAULT
         };
@@ -109,7 +109,7 @@ Status s;
 #if (1 == USBH_HS_ENABLED)
     {
         OS_DriverConfig drv_cfg = {
-            .name       = "UH_HS_MSC",
+            .name       = "UHHS_MSC",
             .itf_p      = drv_usbh_v[DRV_ID_USBH_HS_MSC],
             .prio_power = OS_PWR_PRIO_DEFAULT
         };
@@ -134,7 +134,7 @@ const OS_TaskHd usbhd_thd = OS_TaskByNameGet("UsbHostD");
 const OS_SignalSrc usbhd_tid = OS_TaskIdGet(usbhd_thd);
 OS_Message* msg_p;// = OS_MessageCreate(OS_MSG_APP, sizeof(task_args), OS_BLOCK, &task_args);
 volatile int debug = 0;
-const OS_Signal signal = OS_SIGNAL_CREATE(OS_SIG_APP, 0);
+const OS_Signal signal = OS_SignalCreate(OS_SIG_APP, 0);
 
     OS_ASSERT(S_OK == OS_TasksConnect(usbhd_thd, OS_THIS_TASK));
 //    OS_SIGNAL_EMIT(a_ko_qhd, signal, OS_MSG_PRIO_HIGH);
@@ -146,44 +146,62 @@ U8 debug_count = (rand() % 6) + 1;
         IF_STATUS(OS_MessageReceive(stdio_in_qhd, &msg_p, task_args_p->blink_rate)) {
             //OS_LOG_S(D_WARNING, S_UNDEF_MSG);
         } else {
-            if (OS_SIGNAL_IS(msg_p)) {
-                if (usbhd_tid == OS_SIGNAL_SRC_GET(msg_p)) {
-                    const OS_SignalData sig_data = OS_SIGNAL_DATA_GET(msg_p);
+            if (OS_SignalIs(msg_p)) {
+                if (usbhd_tid == OS_SignalSrcGet(msg_p)) {
+                    const OS_SignalId sig_id = OS_SignalIdGet(msg_p);
+                    const OS_SignalData sig_data = OS_SignalDataGet(msg_p);
                     const U8 usbh_itf_id = OS_USBH_SIG_ITF_GET(sig_data);
                     const U8 usbh_msg_id = OS_USBH_SIG_MSG_GET(sig_data);
                     OS_FileSystemMediaHd fs_usb_hd;
-
+                    StrPtr itf_str_p;
+                    StrPtr class_str_p;
+                    StrPtr state_str_p;
+                    // Interface
                     if (USBH_ID_FS == usbh_itf_id) {
+                        itf_str_p = "FS";
                         fs_usb_hd = task_args_p->fs_usb_fs_hd;
                     } else if (USBH_ID_HS == usbh_itf_id) {
+                        itf_str_p = "HS";
                         fs_usb_hd = task_args_p->fs_usb_hs_hd;
                     } else { OS_ASSERT(OS_FALSE); }
-
-                    switch (OS_SIGNAL_ID_GET(msg_p)) {
+                    // Class
+                    if (OS_USB_CLASS_MSC == usbh_msg_id) {
+                        class_str_p = "MSC ";
+                    } else if (OS_USB_CLASS_HID == usbh_msg_id) {
+                        class_str_p = "HID ";
+                    } else { class_str_p = ""; }
+                    // State
+                    switch (sig_id) {
                         case OS_SIG_USB_CONNECT:
+                            state_str_p = "Connected";
                             break;
                         case OS_SIG_USB_READY:
-                            if (!OS_STRCMP(OS_EnvVariableGet("media_automount"), "on")) {
-                                if (OS_USB_CLASS_MSC == usbh_msg_id) {
+                            state_str_p = "Ready";
+                            if (OS_USB_CLASS_MSC == usbh_msg_id) {
+                                if (!OS_StrCmp(OS_EnvVariableGet("media_automount"), "on")) {
                                     IF_STATUS_OK(OS_FileSystemMount(fs_usb_hd)) {
                                     }
                                 }
+                            } else if (OS_USB_CLASS_HID == usbh_msg_id) {
                             }
                             break;
                         case OS_SIG_USB_DISCONNECT:
+                            state_str_p = "Disconnected";
                             if (OS_USB_CLASS_MSC == usbh_msg_id) {
                                 IF_STATUS_OK(OS_FileSystemUnMount(fs_usb_hd)) {
                                 }
+                            } else if (OS_USB_CLASS_HID == usbh_msg_id) {
                             }
                             break;
                         default:
                             OS_LOG_S(D_DEBUG, S_UNDEF_SIG);
                             break;
                     }
+                    OS_LOG(D_DEBUG, "%s %s%s", itf_str_p, class_str_p, state_str_p);
                 } else {
-                    switch (OS_SIGNAL_ID_GET(msg_p)) {
+                    switch (OS_SignalIdGet(msg_p)) {
                         case OS_SIG_APP:
-                            debug = OS_SIGNAL_DATA_GET(msg_p);
+                            debug = OS_SignalDataGet(msg_p);
                             break;
                         default:
                             OS_LOG_S(D_DEBUG, S_UNDEF_SIG);
@@ -192,9 +210,25 @@ U8 debug_count = (rand() % 6) + 1;
                 }
             } else {
                 switch (msg_p->id) {
-                    case OS_MSG_APP:
-                        debug = 2;
+                    case OS_MSG_USB_HID_MOUSE: {
+                        const OS_UsbHidMouseData* mouse_p = (OS_UsbHidMouseData*)&(msg_p->data);
+                        const U8 l = BIT_TEST(mouse_p->buttons_bm, BIT(OS_USB_HID_MOUSE_BUTTON_LEFT));
+                        const U8 r = BIT_TEST(mouse_p->buttons_bm, BIT(OS_USB_HID_MOUSE_BUTTON_RIGHT));
+                        const U8 m = BIT_TEST(mouse_p->buttons_bm, BIT(OS_USB_HID_MOUSE_BUTTON_MIDDLE));
+                        OS_LOG(D_DEBUG, "X:%d, Y:%d, L:%d, M:%d, R:%d",
+                                        mouse_p->x, mouse_p->y, l, m, r);
+                        }
                         break;
+                    case OS_MSG_USB_HID_KEYBOARD: //{
+//                        const OS_UsbHidKeyboardData* keyboard_data_p = (OS_UsbHidKeyboardData*)&(msg_p->data);
+//                        if ('\0' != keyboard_data_p->key_ascii) {
+//                            OS_LOG(D_DEBUG, "%c, %d", keyboard_data_p->key_ascii, keyboard_data_p->keys_func_bm);
+//                        }
+//                        }
+                        break;
+//                    case OS_MSG_APP:
+//                        debug = 2;
+//                        break;
                     default:
                         OS_LOG_S(D_DEBUG, S_UNDEF_MSG);
                         break;
@@ -242,12 +276,16 @@ Status s = S_OK;
             IF_STATUS(s = OS_FileSystemMediaDeInit(task_args_p->fs_sd_hd)) {
                 OS_LOG_S(D_WARNING, s);
             }
+#if (1 == USBH_FS_ENABLED)
             IF_STATUS(s = OS_FileSystemMediaDeInit(task_args_p->fs_usb_fs_hd)) {
                 OS_LOG_S(D_WARNING, s);
             }
+#endif //(1 == USBH_FS_ENABLED)
+#if (1 == USBH_HS_ENABLED)
             IF_STATUS(s = OS_FileSystemMediaDeInit(task_args_p->fs_usb_hs_hd)) {
                 OS_LOG_S(D_WARNING, s);
             }
+#endif //(1 == USBH_HS_ENABLED)
 //            IF_STATUS_OK(s = OS_DriverClose(task_args.drv_led_user)) {
 //                IF_STATUS(s = OS_DriverDeInit(task_args.drv_led_user)) {
 //                }
@@ -282,10 +320,14 @@ Status s = S_OK;
 
                 }
             }
+#if (1 == USBH_FS_ENABLED)
             IF_STATUS_OK(OS_FileSystemMediaInit(task_args_p->fs_usb_fs_hd)) {
             }
+#endif //(1 == USBH_FS_ENABLED)
+#if (1 == USBH_HS_ENABLED)
             IF_STATUS_OK(OS_FileSystemMediaInit(task_args_p->fs_usb_hs_hd)) {
             }
+#endif //(1 == USBH_HS_ENABLED)
 //            ConstStr* task_name_server = "A-ko";
 //            const OS_TaskHd a_ko_thd = OS_TaskByNameGet(task_name_server);
 //            task_args_p->a_ko_qhd = OS_TaskStdIoGet(a_ko_thd, OS_STDIO_IN);
