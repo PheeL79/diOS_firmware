@@ -65,7 +65,7 @@ const OS_TaskConfig task_a_ko_cfg = {
     .prio_init  = OS_TASK_PRIO_NORMAL,
     .prio_power = OS_PWR_PRIO_DEFAULT + 5,
     .stack_size = OS_STACK_SIZE_MIN,
-    .stdin_len  = OS_STDIO_LEN
+    .stdin_len  = OS_STDIN_LEN
 };
 
 /******************************************************************************/
