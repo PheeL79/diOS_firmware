@@ -34,7 +34,7 @@ typedef struct {
     OS_DriverHd drv_button_tamper;
     OS_DriverHd drv_button_wakeup;
     OS_TimerHd  timer_power;
-    BL          button_wakeup_state;
+    Bool        button_wakeup_state;
 } TaskArgs;
 
 static TaskArgs task_args = {
@@ -133,7 +133,7 @@ U8 debug_count = (rand() % 17) + 1;
                         const OS_TimerId timer_id = (OS_TimerId)OS_SignalDataGet(msg_p);
                             OS_EventItem* item_p = OS_EventItemByTimerIdGet(timer_id);
                             if (OS_NULL != item_p) {
-                                IF_STATUS_OK(s = OS_EventItemLock(item_p, OS_TIMEOUT_MUTEX_LOCK)) {
+                                IF_OK(s = OS_EventItemLock(item_p, OS_TIMEOUT_MUTEX_LOCK)) {
                                     OS_LOG(D_INFO, item_p->data_p);
                                     IF_STATUS(s = OS_EventItemUnlock(item_p)) {
                                         OS_LOG_S(D_WARNING, s);
@@ -192,13 +192,13 @@ Status s = S_OK;
             IF_STATUS(s = OS_TimerDelete(task_args_p->timer_power, OS_TIMEOUT_DEFAULT)) {
             }
             task_args_p->timer_power = OS_NULL;
-            IF_STATUS_OK(s = OS_DriverClose(task_args.drv_button_tamper, OS_NULL)) {
+            IF_OK(s = OS_DriverClose(task_args.drv_button_tamper, OS_NULL)) {
                 IF_STATUS(s = OS_DriverDeInit(task_args.drv_button_tamper, OS_NULL)) {
                 }
             } else {
                 s = (S_INIT == s) ? S_OK : s;
             }
-            IF_STATUS_OK(s = OS_DriverClose(task_args.drv_button_wakeup, OS_NULL)) {
+            IF_OK(s = OS_DriverClose(task_args.drv_button_wakeup, OS_NULL)) {
                 IF_STATUS(s = OS_DriverDeInit(task_args.drv_button_wakeup, OS_NULL)) {
                 }
             } else {
@@ -221,13 +221,13 @@ Status s = S_OK;
                     return s;
                 }
             }
-            IF_STATUS_OK(s = OS_DriverInit(task_args.drv_button_tamper, OS_NULL)) {
+            IF_OK(s = OS_DriverInit(task_args.drv_button_tamper, OS_NULL)) {
                 IF_STATUS(s = OS_DriverOpen(task_args.drv_button_tamper, (void*)ISR_ButtonTamperHandler)) {
                 }
             } else {
                 s = (S_INIT == s) ? S_OK : s;
             }
-            IF_STATUS_OK(s = OS_DriverInit(task_args.drv_button_wakeup, OS_NULL)) {
+            IF_OK(s = OS_DriverInit(task_args.drv_button_wakeup, OS_NULL)) {
                 IF_STATUS(s = OS_DriverOpen(task_args.drv_button_wakeup, (void*)ISR_ButtonWakeupHandler)) {
                 }
             } else {
@@ -256,7 +256,7 @@ void ButtonTamperHandler(TaskArgs* task_args_p)
     //Wait for jitter to calm.
     OS_TaskDelay(100);
     //Remove jitter signals from the queue.
-    OS_QueueFlush(task_args_p->stdin_qhd);
+    OS_QueueClear(task_args_p->stdin_qhd);
 //#ifndef NDEBUG
 //U32 size = 0x1000;
 //U8* data_p = OS_MallocEx(size, OS_MEM_RAM_INT_CCM);
@@ -294,10 +294,10 @@ void ButtonWakeupHandler(TaskArgs* task_args_p)
         OS_LOG(D_INFO, "Wakeup button released");
     }
     OS_TimerStart(task_args_p->timer_power, 4000);
-    //Wait for jitter to calm.
+    //Wait for debounce.
     OS_TaskDelay(10);
     //Remove jitter signals from the queue.
-    OS_QueueFlush(task_args_p->stdin_qhd);
+    OS_QueueClear(task_args_p->stdin_qhd);
     // Is button released?
     if (OS_FALSE == task_args_p->button_wakeup_state) {
         static OS_PowerState state_prev = PWR_UNDEF;

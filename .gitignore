@@ -19,3 +19,5 @@
 *.jlink
 *.cspy.bat
 /prj/olimex_stm32_p407/iar710/Debug FLASH/Exe/*.sim
+/prj/olimex_stm32_p407/iar710/*.tmp
+/src/*.TMP

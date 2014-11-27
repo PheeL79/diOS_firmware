@@ -9,9 +9,10 @@
 #include "os_supervise.h"
 #include "os_startup.h"
 #include "version.h"
-#ifdef TEST
+#include "os_shell_commands_app.h"
+#ifdef OS_TEST
 #include "test_main.h"
-#endif // TEST
+#endif // OS_TEST
 
 //-----------------------------------------------------------------------------
 #define MDL_NAME    "main"
@@ -53,9 +54,10 @@ Status APP_Init(void)
 {
 extern const OS_TaskConfig task_a_ko_cfg, task_b_ko_cfg;
 Status s = S_OK;
+    IF_STATUS(s = OS_ShellCommandsAppInit()) { return s; }
     // Add application tasks to the system startup.
-    IF_STATUS(s = OS_StartupTaskAdd(&task_a_ko_cfg)) { return s; }
-    IF_STATUS(s = OS_StartupTaskAdd(&task_b_ko_cfg)) { return s; }
+//    IF_STATUS(s = OS_StartupTaskAdd(&task_a_ko_cfg)) { return s; }
+//    IF_STATUS(s = OS_StartupTaskAdd(&task_b_ko_cfg)) { return s; }
 
     HAL_LOG(D_INFO, "Application init...");
     HAL_LOG(D_INFO, "-------------------------------");

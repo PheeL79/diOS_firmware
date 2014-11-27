@@ -213,7 +213,7 @@
         </option>
         <option>
           <name>CCDiagSuppress</name>
-          <state></state>
+          <state>Pe301</state>
         </option>
         <option>
           <name>CCDiagRemark</name>
@@ -316,7 +316,9 @@
           <state>$PROJ_DIR$\..\..\..\ext\diOS\cfg\freertos\800</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\ext\fat_fs\0.10b\src</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\cfg\fat_fs\0.10b</state>
+          <state>$PROJ_DIR$\..\..\..\ext\diOS\src\hal</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\src\hal\csp\stm32f40xx</state>
+          <state>$PROJ_DIR$\..\..\..\ext\diOS\src\hal\bsp\olimex_stm32_p407</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\src\tst</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\cfg\olimex_stm32_p407</state>
         </option>
@@ -3832,6 +3834,9 @@
     </file>
     <file>
       <name>$PROJ_DIR$\..\..\..\src\task_b_ko.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\..\src\task_mmplay.c</name>
     </file>
   </group>
   <group>

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "drv_usb.h"
 #include "os_message.h"
 #include "os_debug.h"
 #include "os_timer.h"
@@ -15,7 +16,6 @@
 #include "os_signal.h"
 #include "os_settings.h"
 #include "os_environment.h"
-#include "os_usb.h"
 #include "task_b_ko.h"
 
 //-----------------------------------------------------------------------------
@@ -81,7 +81,7 @@ const OS_Signal signal = OS_SignalCreate(OS_SIG_APP, 0);
 //    OS_MessageSend(a_ko_qhd, msg_p, 100, OS_MSG_PRIO_NORMAL);
 
 U8 debug_count = (rand() % 6) + 1;
-//task_args_p->blink_rate = 500;
+task_args_p->blink_rate = 1;
 	for(;;) {
         IF_STATUS(OS_MessageReceive(stdin_qhd, &msg_p, task_args_p->blink_rate)) {
             //OS_LOG_S(D_WARNING, S_UNDEF_MSG);
@@ -140,7 +140,7 @@ Status s = S_OK;
         case PWR_STARTUP:
             IF_STATUS(s = OS_TaskInit(args_p)) {
             }
-            IF_STATUS_OK(s = OS_DriverInit(task_args.drv_led_user, OS_NULL)) {
+            IF_OK(s = OS_DriverInit(task_args.drv_led_user, OS_NULL)) {
                 IF_STATUS(s = OS_DriverOpen(task_args.drv_led_user, OS_NULL)) {
                 }
             } else {
@@ -153,7 +153,7 @@ Status s = S_OK;
 //            IF_STATUS(s = OS_EventDelete(task_args_p->ehd, OS_TIMEOUT_DEFAULT)) {
 //                OS_LOG_S(D_WARNING, s);
 //            }
-//            IF_STATUS_OK(s = OS_DriverClose(task_args.drv_led_user)) {
+//            IF_OK(s = OS_DriverClose(task_args.drv_led_user)) {
 //                IF_STATUS(s = OS_DriverDeInit(task_args.drv_led_user)) {
 //                }
 //            } else {
@@ -207,14 +207,14 @@ Status s;
 
     *ehd_p = OS_NULL;
     OS_StrCpy(hello_msg_p, hello_msg);
-    IF_STATUS_OK(s = OS_EventItemCreate(hello_msg_p, hello_msg_len, &ev_item_p)) {
+    IF_OK(s = OS_EventItemCreate(hello_msg_p, hello_msg_len, &ev_item_p)) {
         static ConstStrPtr tim_name_p = "EventT";
         const OS_TimerConfig tim_cfg = {
             .name_p = tim_name_p,
             .slot   = a_ko_qhd,
             .id     = 18,
             .period = 10000,
-            .options= (OS_TimerOptions)BIT(OS_TIM_OPT_PERIODIC) | (OS_TimerOptions)BIT(OS_TIM_OPT_EVENT)
+            .options= (OS_TimerOptions)(BIT(OS_TIM_OPT_PERIODIC) | BIT(OS_TIM_OPT_EVENT))
         };
         const OS_EventConfig cfg = {
             .timer_cfg_p= &tim_cfg,
