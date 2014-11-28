@@ -3826,6 +3826,9 @@
   </configuration>
   <group>
     <name>app</name>
+    <group>
+      <name>mp3</name>
+    </group>
     <file>
       <name>$PROJ_DIR$\..\..\..\src\os_shell_commands_app.c</name>
     </file>

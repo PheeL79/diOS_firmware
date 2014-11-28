@@ -111,8 +111,7 @@ Status s = S_UNDEF;
                     if (OS_NULL == task_args_p->audio_buf_p) { return s = S_NO_MEMORY; }
                     IF_OK(s = OS_FileOpen(&task_args_p->file_hd, task_args_p->file_path_str_p,
                                           BIT(OS_FS_FILE_OP_MODE_OPEN_EXISTS) | BIT(OS_FS_FILE_OP_MODE_READ))) {
-                        const OS_QueueHd stdin_qhd = OS_TaskStdInGet(OS_THIS_TASK);
-                        IF_OK(s = OS_AudioDeviceOpen(task_args_p->audio_dev_hd, (void*)&stdin_qhd/*OS_NULL*/)) {
+                        IF_OK(s = OS_AudioDeviceOpen(task_args_p->audio_dev_hd, OS_NULL)) {
                             IF_OK(s = Play(task_args_p, task_args_p->audio_format)) { //Play the audio file.
                             }
                             IF_STATUS(s) {
@@ -140,6 +139,7 @@ void OS_TaskMain(OS_TaskArgs* args_p)
 TaskArgs* task_args_p = (TaskArgs*)args_p;
 const OS_QueueHd stdin_qhd = OS_TaskStdInGet(OS_THIS_TASK);
 OS_Message* msg_p;
+Size audio_buf_size = task_args_p->audio_buf_size / 2;
 Status s = S_UNDEF;
 
 	for(;;) {
@@ -149,42 +149,15 @@ Status s = S_UNDEF;
             if (OS_SignalIs(msg_p)) {
                 switch (OS_SignalIdGet(msg_p)) {
                     case OS_SIG_AUDIO_TX_COMPLETE:
-                        if (MMPLAY_STATE_PLAY == task_args_p->state) {
-#if (1 == OS_DEBUG_ENABLED)
-{
-//    HAL_DEBUG_PIN1_TOGGLE;
-}
-#endif //(1 == OS_DEBUG_ENABLED)
-                            // Required less than 5(uS)(192KHz) delay before next sample data output!
-                            IF_OK(s = OS_AudioPlay(task_args_p->audio_dev_hd, task_args_p->audio_buf_p, task_args_p->audio_buf_size)) {
-                                Size  audio_buf_size  = task_args_p->audio_buf_size / 2;
-                                void* audio_buf_p     = ((U8*)task_args_p->audio_buf_p + audio_buf_size);
-                                IF_OK(s = OS_FileRead(task_args_p->file_hd, audio_buf_p, audio_buf_size)) {
-                                    AudioDecode(audio_buf_p, audio_buf_size, task_args_p->audio_format);
-                                    VolumeApply(audio_buf_p, audio_buf_size, task_args_p->audio_info.sample_bits, OS_VolumeGet());
-                                } else {
-                                    if ((S_FS_EOF == s) || (S_SIZE_MISMATCH == s)) {
-                                        OS_LOG(D_DEBUG, "End of file");
-                                        OS_TaskDelete(OS_THIS_TASK);
-                                    }
-                                }
+                        {
+                            void* audio_buf_p;
+                            const OS_SignalData sig_data = OS_SignalDataGet(msg_p);
+                            if (0 == sig_data) {
+                                audio_buf_p = task_args_p->audio_buf_p;
+                            } else if (1 == sig_data) {
+                                audio_buf_p = ((U8*)task_args_p->audio_buf_p + audio_buf_size);
                             }
-#if (1 == OS_DEBUG_ENABLED)
-{
-//    HAL_DEBUG_PIN1_TOGGLE;
-}
-#endif //(1 == OS_DEBUG_ENABLED)
-                        }
-                        break;
-                    case OS_SIG_AUDIO_TX_COMPLETE_HALF:
-                        if (MMPLAY_STATE_PLAY == task_args_p->state) {
-                            Size  audio_buf_size  = task_args_p->audio_buf_size / 2;
-                            void* audio_buf_p     = task_args_p->audio_buf_p;
-#if (1 == OS_DEBUG_ENABLED)
-{
-//    HAL_DEBUG_PIN2_TOGGLE;
-}
-#endif //(1 == OS_DEBUG_ENABLED)
+
                             IF_OK(s = OS_FileRead(task_args_p->file_hd, audio_buf_p, audio_buf_size)) {
                                 AudioDecode(audio_buf_p, audio_buf_size, task_args_p->audio_format);
                                 VolumeApply(audio_buf_p, audio_buf_size, task_args_p->audio_info.sample_bits, OS_VolumeGet());
@@ -194,11 +167,6 @@ Status s = S_UNDEF;
                                     OS_TaskDelete(OS_THIS_TASK);
                                 }
                             }
-#if (1 == OS_DEBUG_ENABLED)
-{
-//    HAL_DEBUG_PIN2_TOGGLE;
-}
-#endif //(1 == OS_DEBUG_ENABLED)
                         }
                         break;
                     case OS_SIG_AUDIO_ERROR:
@@ -227,8 +195,10 @@ Status s = S_UNDEF;
                         if ((MMPLAY_STATE_PLAY  == task_args_p->state) ||
                             (MMPLAY_STATE_PAUSE == task_args_p->state)) {
                             IF_OK(s = OS_AudioStop(task_args_p->audio_dev_hd)) {
-                                IF_OK(s = OS_FileLSeek(task_args_p->file_hd, 0)) {
-                                    task_args_p->state = MMPLAY_STATE_STOP;
+                                IF_OK(s = OS_QueueClear(stdin_qhd)) {
+                                    IF_OK(s = OS_FileLSeek(task_args_p->file_hd, 0)) {
+                                        task_args_p->state = MMPLAY_STATE_STOP;
+                                    }
                                 }
                             }
                         } else { s = S_INVALID_STATE; }
@@ -294,18 +264,18 @@ Status Play(TaskArgs* task_args_p, const FileAudioFormat format)
 Size audio_header_size = 0;
 Status s = S_UNDEF;
 
-    IF_OK(s = OS_FileRead(task_args_p->file_hd, task_args_p->audio_buf_p, task_args_p->audio_buf_size)) {
-        if (FILE_AUDIO_FORMAT_WAV == format) {
-            audio_header_size = sizeof(FileAudioFormatWav);
-        } else {
-            s = OS_FileClose(&task_args_p->file_hd);
-            return s = S_INVALID_VALUE;
-        }
-        void* audio_buf_p   = ((U8*)task_args_p->audio_buf_p + audio_header_size);
-        Size audio_buf_size = (task_args_p->audio_buf_size   - audio_header_size);
-        VolumeApply(audio_buf_p, audio_buf_size, task_args_p->audio_info.sample_bits, OS_VolumeGet());
-        IF_OK(s = OS_AudioPlay(task_args_p->audio_dev_hd, audio_buf_p, audio_buf_size)) {
-            task_args_p->state = MMPLAY_STATE_PLAY;
+    if (FILE_AUDIO_FORMAT_WAV == format) {
+        audio_header_size = sizeof(FileAudioFormatWav);
+    } else {
+        s = OS_FileClose(&task_args_p->file_hd);
+        return s = S_INVALID_VALUE;
+    }
+    IF_OK(s = OS_FileLSeek(task_args_p->file_hd, audio_header_size)) {
+        IF_OK(s = OS_FileRead(task_args_p->file_hd, task_args_p->audio_buf_p, task_args_p->audio_buf_size)) {
+            VolumeApply(task_args_p->audio_buf_p, task_args_p->audio_buf_size, task_args_p->audio_info.sample_bits, OS_VolumeGet());
+            IF_OK(s = OS_AudioPlay(task_args_p->audio_dev_hd, task_args_p->audio_buf_p, task_args_p->audio_buf_size)) {
+                task_args_p->state = MMPLAY_STATE_PLAY;
+            }
         }
     }
     return s;
@@ -373,18 +343,18 @@ void VolumeApply(void* data_out_p, Size size, const OS_AudioBits bit_rate, const
     if (16 == bit_rate) {
         S16* data_out_16p = data_out_p;
         size /= sizeof(S16);
-        do {
+        while (size--) {
             *data_out_16p *= volume_pct;
             ++data_out_16p;
-        } while (--size);
+        }
     } else if ((24 == bit_rate) ||
                (32 == bit_rate)) {
         S32* data_out_32p = (S32*)data_out_p;
         size /= sizeof(S32);
-        do {
+        while (size--) {
             *data_out_32p *= volume_pct;
             ++data_out_32p;
-        } while (--size);
+        }
     } else { OS_LOG_S(D_WARNING, S_INVALID_VALUE); }
 }
 
