@@ -11,37 +11,29 @@
 //-----------------------------------------------------------------------------
 static OS_TaskHd mmplay_thd;
 
-/******************************************************************************/
-static Status OS_ShellCmdMMPlayCreate(ConstStrPtr file_path_str_p);
-Status OS_ShellCmdMMPlayCreate(ConstStrPtr file_path_str_p)
-{
-    task_mmplay_args.file_path_str_p = (void*)file_path_str_p;
-    return OS_TaskCreate(&task_mmplay_cfg, &mmplay_thd);
-}
-
 //------------------------------------------------------------------------------
 static ConstStr cmd_mmplay[]            = "mmplay";
 static ConstStr cmd_help_brief_mmplay[] = "Play a multimedia file.";
 /******************************************************************************/
-static Status OS_ShellCmdMMPlayHandler(const U32 argc, ConstStrPtr argv[]);
-Status OS_ShellCmdMMPlayHandler(const U32 argc, ConstStrPtr argv[])
+static Status OS_ShellCmdMMPlayHandler(const U32 argc, ConstStrP argv[]);
+Status OS_ShellCmdMMPlayHandler(const U32 argc, ConstStrP argv[])
 {
 static OS_QueueHd mmplay_stdin_qhd;
-const char* cmd_str_p = (char*)argv[0];
+const char* file_path_str_p = (char*)argv[0];
 OS_SignalId signal_id = OS_SIG_UNDEF;
 Status s = S_UNDEF;
-    if (!OS_StrCmp("play", cmd_str_p)) {
+    if (!OS_StrCmp("play", file_path_str_p)) {
         signal_id = OS_SIG_MMPLAY_PLAY;
-    } else if (!OS_StrCmp("pause", cmd_str_p)) {
+    } else if (!OS_StrCmp("pause", file_path_str_p)) {
         signal_id = OS_SIG_MMPLAY_PAUSE;
-    } else if (!OS_StrCmp("resume",cmd_str_p)) {
+    } else if (!OS_StrCmp("resume",file_path_str_p)) {
         signal_id = OS_SIG_MMPLAY_RESUME;
-    } else if (!OS_StrCmp("stop", cmd_str_p)) {
+    } else if (!OS_StrCmp("stop", file_path_str_p)) {
         signal_id = OS_SIG_MMPLAY_STOP;
-    } else if (!OS_StrCmp("seek", cmd_str_p)) {
+    } else if (!OS_StrCmp("seek", file_path_str_p)) {
         signal_id = OS_SIG_MMPLAY_SEEK;
     } else {
-        IF_OK(s = OS_ShellCmdMMPlayCreate(cmd_str_p)) {
+        IF_OK(s = OS_TaskCreate(file_path_str_p, &task_mmplay_cfg, &mmplay_thd)) {
             mmplay_stdin_qhd = OS_TaskStdInGet(mmplay_thd);
             if (OS_NULL == mmplay_stdin_qhd) {
                 OS_TaskDelete(mmplay_thd);

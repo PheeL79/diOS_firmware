@@ -17,6 +17,7 @@
 #include "os_event.h"
 #include "os_environment.h"
 #include "drv_rtc.h"
+#include "app_common.h"
 #include "task_a_ko.h"
 
 //------------------------------------------------------------------------------
@@ -35,51 +36,43 @@ typedef struct {
     OS_DriverHd drv_button_wakeup;
     OS_TimerHd  timer_power;
     Bool        button_wakeup_state;
-} TaskArgs;
-
-static TaskArgs task_args = {
-    .stdin_qhd          = OS_NULL,
-    .stdout_qhd         = OS_NULL,
-    .drv_rtc            = OS_NULL,
-    .drv_button_tamper  = OS_NULL,
-    .drv_button_tamper  = OS_NULL,
-    .timer_power        = OS_NULL,
-    .button_wakeup_state= OS_FALSE
-};
+} TaskStorage;
 
 //-----------------------------------------------------------------------------
-static void     TimerPowerHandler(TaskArgs* task_args_p);
-static void     ButtonTamperHandler(TaskArgs* task_args_p);
+static void     TimerPowerHandler(TaskStorage* tstor_p);
+static void     ButtonTamperHandler(TaskStorage* tstor_p);
 static void     ISR_ButtonTamperHandler(void);
-static void     ButtonWakeupHandler(TaskArgs* task_args_p);
+static void     ButtonWakeupHandler(TaskStorage* tstor_p);
 static void     ISR_ButtonWakeupHandler(void);
 
 //------------------------------------------------------------------------------
 const OS_TaskConfig task_a_ko_cfg = {
-    .name       = "A-ko",
-    .func_main  = OS_TaskMain,
-    .func_power = OS_TaskPower,
-    .args_p     = (void*)&task_args,
-    .attrs      = BIT(OS_TASK_ATTR_RECREATE),
-    .timeout    = 1,
-    .prio_init  = OS_TASK_PRIO_NORMAL,
-    .prio_power = OS_PWR_PRIO_DEFAULT + 5,
-    .stack_size = OS_STACK_SIZE_MIN,
-    .stdin_len  = OS_STDIN_LEN
+    .name           = "A-ko",
+    .func_main      = OS_TaskMain,
+    .func_power     = OS_TaskPower,
+    .attrs          = BIT(OS_TASK_ATTR_RECREATE),
+    .timeout        = 1,
+    .prio_init      = APP_TASK_PRIO_A_KO,
+    .prio_power     = APP_TASK_PRIO_PWR_A_KO,
+    .storage_size   = sizeof(TaskStorage),
+    .stack_size     = OS_STACK_SIZE_MIN,
+    .stdin_len      = OS_STDIN_LEN
 };
 
 /******************************************************************************/
 Status OS_TaskInit(OS_TaskArgs* args_p)
 {
-TaskArgs* task_args_p = (TaskArgs*)args_p;
+TaskStorage* tstor_p = (TaskStorage*)args_p->stor_p;
 Status s;
+
+    tstor_p->button_wakeup_state = OS_FALSE;
     {
         const OS_DriverConfig drv_cfg = {
             .name       = "BTAMPER",
             .itf_p      = drv_button_v[DRV_ID_BUTTON_TAMPER],
             .prio_power = OS_PWR_PRIO_DEFAULT
         };
-        IF_STATUS(s = OS_DriverCreate(&drv_cfg, (OS_DriverHd*)&task_args_p->drv_button_tamper)) { return s; }
+        IF_STATUS(s = OS_DriverCreate(&drv_cfg, (OS_DriverHd*)&tstor_p->drv_button_tamper)) { return s; }
     }
     {
         const OS_DriverConfig drv_cfg = {
@@ -87,7 +80,7 @@ Status s;
             .itf_p      = drv_button_v[DRV_ID_BUTTON_WAKEUP],
             .prio_power = OS_PWR_PRIO_DEFAULT
         };
-        IF_STATUS(s = OS_DriverCreate(&drv_cfg, (OS_DriverHd*)&task_args_p->drv_button_wakeup)) { return s; }
+        IF_STATUS(s = OS_DriverCreate(&drv_cfg, (OS_DriverHd*)&tstor_p->drv_button_wakeup)) { return s; }
     }
     return s;
 }
@@ -95,16 +88,16 @@ Status s;
 /******************************************************************************/
 void OS_TaskMain(OS_TaskArgs* args_p)
 {
-TaskArgs* task_args_p = (TaskArgs*)args_p;
+TaskStorage* tstor_p = (TaskStorage*)args_p->stor_p;
 OS_Message* msg_p;
 volatile int debug = 0;
 Status s;
 
-    task_args_p->drv_rtc = OS_DriverRtcGet();
+    tstor_p->drv_rtc = OS_DriverRtcGet();
 
 U8 debug_count = (rand() % 17) + 1;
 	for(;;) {
-        IF_STATUS(s = OS_MessageReceive(task_args_p->stdin_qhd, &msg_p, OS_BLOCK)) {
+        IF_STATUS(s = OS_MessageReceive(tstor_p->stdin_qhd, &msg_p, OS_BLOCK)) {
             //OS_LOG_S(D_WARNING, s);
         } else {
             if (OS_SignalIs(msg_p)) {
@@ -112,10 +105,10 @@ U8 debug_count = (rand() % 17) + 1;
                     case OS_SIG_DRV:
                         switch (OS_SignalDataGet(msg_p)) {
                             case OS_EVENT_TAMPER:
-                                ButtonTamperHandler(task_args_p);
+                                ButtonTamperHandler(tstor_p);
                                 break;
                             case OS_EVENT_WAKEUP:
-                                ButtonWakeupHandler(task_args_p);
+                                ButtonWakeupHandler(tstor_p);
                                 break;
                             default:
                                 OS_LOG_S(D_DEBUG, S_UNDEF_SIG);
@@ -123,9 +116,9 @@ U8 debug_count = (rand() % 17) + 1;
                         }
                         break;
                     case OS_SIG_TIMER: {
-                        const OS_TimerId timer_id = OS_TimerIdGet(task_args_p->timer_power);
+                        const OS_TimerId timer_id = OS_TimerIdGet(tstor_p->timer_power);
                         if (timer_id == (OS_TimerId)OS_SignalDataGet(msg_p)) {
-                            TimerPowerHandler(task_args_p);
+                            TimerPowerHandler(tstor_p);
                         }
                         }
                         break;
@@ -175,7 +168,7 @@ U8 debug_count = (rand() % 17) + 1;
 /******************************************************************************/
 Status OS_TaskPower(OS_TaskArgs* args_p, const OS_PowerState state)
 {
-TaskArgs* task_args_p = (TaskArgs*)args_p;
+TaskStorage* tstor_p = (TaskStorage*)args_p->stor_p;
 Status s = S_OK;
 
 //    if (PWR_STOP == state) {
@@ -189,17 +182,17 @@ Status s = S_OK;
             break;
         case PWR_OFF:
         case PWR_SHUTDOWN: {
-            IF_STATUS(s = OS_TimerDelete(task_args_p->timer_power, OS_TIMEOUT_DEFAULT)) {
+            IF_STATUS(s = OS_TimerDelete(tstor_p->timer_power, OS_TIMEOUT_DEFAULT)) {
             }
-            task_args_p->timer_power = OS_NULL;
-            IF_OK(s = OS_DriverClose(task_args.drv_button_tamper, OS_NULL)) {
-                IF_STATUS(s = OS_DriverDeInit(task_args.drv_button_tamper, OS_NULL)) {
+            tstor_p->timer_power = OS_NULL;
+            IF_OK(s = OS_DriverClose(tstor_p->drv_button_tamper, OS_NULL)) {
+                IF_STATUS(s = OS_DriverDeInit(tstor_p->drv_button_tamper, OS_NULL)) {
                 }
             } else {
                 s = (S_INIT == s) ? S_OK : s;
             }
-            IF_OK(s = OS_DriverClose(task_args.drv_button_wakeup, OS_NULL)) {
-                IF_STATUS(s = OS_DriverDeInit(task_args.drv_button_wakeup, OS_NULL)) {
+            IF_OK(s = OS_DriverClose(tstor_p->drv_button_wakeup, OS_NULL)) {
+                IF_STATUS(s = OS_DriverDeInit(tstor_p->drv_button_wakeup, OS_NULL)) {
                 }
             } else {
                 s = (S_INIT == s) ? S_OK : s;
@@ -207,28 +200,28 @@ Status s = S_OK;
             }
             break;
         case PWR_ON: {
-            if (OS_NULL == task_args_p->timer_power) {
-                task_args_p->stdin_qhd = OS_TaskStdInGet(OS_TaskByNameGet(task_a_ko_cfg.name));
-                static ConstStrPtr tim_name_p = "PowerOff";
+            if (OS_NULL == tstor_p->timer_power) {
+                tstor_p->stdin_qhd = OS_TaskStdInGet(OS_TaskByNameGet(task_a_ko_cfg.name));
+                static ConstStrP tim_name_p = "PowerOff";
                 const OS_TimerConfig tim_cfg = {
                     .name_p = tim_name_p,
-                    .slot   = task_args_p->stdin_qhd,
+                    .slot   = tstor_p->stdin_qhd,
                     .id     = 16,
                     .period = 4000,
                     .options= OS_TIM_OPT_UNDEF
                 };
-                IF_STATUS(s = OS_TimerCreate(&tim_cfg, &task_args_p->timer_power)) {
+                IF_STATUS(s = OS_TimerCreate(&tim_cfg, &tstor_p->timer_power)) {
                     return s;
                 }
             }
-            IF_OK(s = OS_DriverInit(task_args.drv_button_tamper, OS_NULL)) {
-                IF_STATUS(s = OS_DriverOpen(task_args.drv_button_tamper, (void*)ISR_ButtonTamperHandler)) {
+            IF_OK(s = OS_DriverInit(tstor_p->drv_button_tamper, OS_NULL)) {
+                IF_STATUS(s = OS_DriverOpen(tstor_p->drv_button_tamper, (void*)ISR_ButtonTamperHandler)) {
                 }
             } else {
                 s = (S_INIT == s) ? S_OK : s;
             }
-            IF_OK(s = OS_DriverInit(task_args.drv_button_wakeup, OS_NULL)) {
-                IF_STATUS(s = OS_DriverOpen(task_args.drv_button_wakeup, (void*)ISR_ButtonWakeupHandler)) {
+            IF_OK(s = OS_DriverInit(tstor_p->drv_button_wakeup, OS_NULL)) {
+                IF_STATUS(s = OS_DriverOpen(tstor_p->drv_button_wakeup, (void*)ISR_ButtonWakeupHandler)) {
                 }
             } else {
                 s = (S_INIT == s) ? S_OK : s;
@@ -242,21 +235,21 @@ Status s = S_OK;
 }
 
 /******************************************************************************/
-void TimerPowerHandler(TaskArgs* task_args_p)
+void TimerPowerHandler(TaskStorage* tstor_p)
 {
 const OS_Signal signal = OS_SignalCreate(OS_SIG_SHUTDOWN, 0);
     OS_SignalSend(OS_TaskSvStdInGet(), signal, OS_MSG_PRIO_HIGH);
 }
 
 /******************************************************************************/
-void ButtonTamperHandler(TaskArgs* task_args_p)
+void ButtonTamperHandler(TaskStorage* tstor_p)
 {
     OS_LOG(D_WARNING, "Tamper event detected!");
-    IF_STATUS(OS_DriverIoCtl(task_args_p->drv_rtc, DRV_REQ_BUTTON_TAMPER_DISABLE, OS_NULL)) { OS_ASSERT(OS_FALSE); }
+    IF_STATUS(OS_DriverIoCtl(tstor_p->drv_rtc, DRV_REQ_BUTTON_TAMPER_DISABLE, OS_NULL)) { OS_ASSERT(OS_FALSE); }
     //Wait for jitter to calm.
     OS_TaskDelay(100);
     //Remove jitter signals from the queue.
-    OS_QueueClear(task_args_p->stdin_qhd);
+    OS_QueueClear(tstor_p->stdin_qhd);
 //#ifndef NDEBUG
 //U32 size = 0x1000;
 //U8* data_p = OS_MallocEx(size, OS_MEM_RAM_INT_CCM);
@@ -271,7 +264,7 @@ void ButtonTamperHandler(TaskArgs* task_args_p)
 //    }
 //    OS_FreeEx(data_p, OS_MEM_RAM_INT_CCM);
 //#endif // NDEBUG
-    IF_STATUS(OS_DriverIoCtl(task_args_p->drv_rtc, DRV_REQ_BUTTON_TAMPER_ENABLE, OS_NULL)) { OS_ASSERT(OS_FALSE); }
+    IF_STATUS(OS_DriverIoCtl(tstor_p->drv_rtc, DRV_REQ_BUTTON_TAMPER_ENABLE, OS_NULL)) { OS_ASSERT(OS_FALSE); }
 }
 
 /******************************************************************************/
@@ -285,24 +278,24 @@ void ISR_ButtonTamperHandler(void)
 }
 
 /******************************************************************************/
-void ButtonWakeupHandler(TaskArgs* task_args_p)
+void ButtonWakeupHandler(TaskStorage* tstor_p)
 {
-    task_args_p->button_wakeup_state ^= OS_TRUE;
-    if (OS_TRUE == task_args_p->button_wakeup_state) {
+    tstor_p->button_wakeup_state ^= OS_TRUE;
+    if (OS_TRUE == tstor_p->button_wakeup_state) {
         OS_LOG(D_INFO, "Wakeup button pressed");
     } else {
         OS_LOG(D_INFO, "Wakeup button released");
     }
-    OS_TimerStart(task_args_p->timer_power, 4000);
+    OS_TimerStart(tstor_p->timer_power, 4000);
     //Wait for debounce.
     OS_TaskDelay(10);
     //Remove jitter signals from the queue.
-    OS_QueueClear(task_args_p->stdin_qhd);
+    OS_QueueClear(tstor_p->stdin_qhd);
     // Is button released?
-    if (OS_FALSE == task_args_p->button_wakeup_state) {
+    if (OS_FALSE == tstor_p->button_wakeup_state) {
         static OS_PowerState state_prev = PWR_UNDEF;
         const OS_PowerState state = OS_PowerStateGet();
-        IF_STATUS(OS_TimerStop(task_args_p->timer_power, OS_TIMEOUT_DEFAULT)) {
+        IF_STATUS(OS_TimerStop(tstor_p->timer_power, OS_TIMEOUT_DEFAULT)) {
             return;
         }
         if (PWR_STOP != state) {

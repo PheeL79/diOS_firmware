@@ -10,9 +10,9 @@
 #include "os_startup.h"
 #include "version.h"
 #include "os_shell_commands_app.h"
-#ifdef OS_TEST
+#if (1 == OS_TEST_ENABLED)
 #include "test_main.h"
-#endif // OS_TEST
+#endif // OS_TEST_ENABLED
 
 //-----------------------------------------------------------------------------
 #define MDL_NAME    "main"
@@ -53,7 +53,9 @@ Status s;
 Status APP_Init(void)
 {
 extern const OS_TaskConfig task_a_ko_cfg, task_b_ko_cfg;
-Status s = S_OK;
+extern Status AudioCodecInit_(void);
+Status s = S_UNDEF;
+    IF_STATUS(s = AudioCodecInit_()) { return s; }
     IF_STATUS(s = OS_ShellCommandsAppInit()) { return s; }
     // Add application tasks to the system startup.
 //    IF_STATUS(s = OS_StartupTaskAdd(&task_a_ko_cfg)) { return s; }
@@ -69,11 +71,11 @@ Status s = S_OK;
                     version.rev);
     HAL_LOG(D_INFO, "Built on: %s, %s", __DATE__, __TIME__);
     HAL_LOG(D_INFO, "-------------------------------");
-#ifdef OS_TEST
+#if (1 == OS_TEST_ENABLED)
     // Tests.
     HAL_LOG(D_INFO, "Tests run...\n");
     TestsRun();
     HAL_LOG(D_INFO, "-------------------------------");
-#endif // OS_TEST
+#endif // OS_TEST_ENABLED
     return s;
 }

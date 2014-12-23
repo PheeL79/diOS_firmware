@@ -16,6 +16,7 @@
 #include "os_signal.h"
 #include "os_settings.h"
 #include "os_environment.h"
+#include "app_common.h"
 #include "task_b_ko.h"
 
 //-----------------------------------------------------------------------------
@@ -25,27 +26,20 @@ typedef struct {
     OS_EventHd              ehd;
     OS_QueueHd              a_ko_qhd;
     TimeMs                  blink_rate;
-} TaskArgs;
-
-static TaskArgs task_args = {
-    .drv_led_user   = OS_NULL,
-    .ehd            = OS_NULL,
-    .a_ko_qhd       = OS_NULL,
-    .blink_rate     = OS_BLOCK,
-};
+} TaskStorage;
 
 //------------------------------------------------------------------------------
 const OS_TaskConfig task_b_ko_cfg = {
-    .name       = "B-ko",
-    .func_main  = OS_TaskMain,
-    .func_power = OS_TaskPower,
-    .args_p     = (void*)&task_args,
-    .attrs      = BIT(OS_TASK_ATTR_RECREATE),
-    .timeout    = 4,
-    .prio_init  = OS_TASK_PRIO_NORMAL,
-    .prio_power = OS_PWR_PRIO_DEFAULT + 3,
-    .stack_size = OS_STACK_SIZE_MIN,
-    .stdin_len  = OS_STDIN_LEN
+    .name           = "B-ko",
+    .func_main      = OS_TaskMain,
+    .func_power     = OS_TaskPower,
+    .attrs          = BIT(OS_TASK_ATTR_RECREATE),
+    .timeout        = 4,
+    .prio_init      = APP_TASK_PRIO_B_KO,
+    .prio_power     = APP_TASK_PRIO_PWR_B_KO,
+    .storage_size   = sizeof(TaskStorage),
+    .stack_size     = OS_STACK_SIZE_MIN,
+    .stdin_len      = OS_STDIN_LEN
 };
 
 //------------------------------------------------------------------------------
@@ -54,15 +48,16 @@ static Status       EventCreate(OS_QueueHd a_ko_qhd, OS_EventHd* ehd_p);
 /******************************************************************************/
 Status OS_TaskInit(OS_TaskArgs* args_p)
 {
-TaskArgs* task_args_p = (TaskArgs*)args_p;
+TaskStorage* tstor_p = (TaskStorage*)args_p->stor_p;
 Status s;
+    tstor_p->blink_rate = OS_BLOCK;
     {
         const OS_DriverConfig drv_cfg = {
             .name       = "LED_USR",
             .itf_p      = drv_led_v[DRV_ID_LED_USER],
             .prio_power = OS_PWR_PRIO_DEFAULT
         };
-        IF_STATUS(s = OS_DriverCreate(&drv_cfg, (OS_DriverHd*)&task_args_p->drv_led_user)) { return s; }
+        IF_STATUS(s = OS_DriverCreate(&drv_cfg, (OS_DriverHd*)&tstor_p->drv_led_user)) { return s; }
     }
     return s;
 }
@@ -70,7 +65,7 @@ Status s;
 /******************************************************************************/
 void OS_TaskMain(OS_TaskArgs* args_p)
 {
-TaskArgs* task_args_p = (TaskArgs*)args_p;
+TaskStorage* tstor_p = (TaskStorage*)args_p->stor_p;
 State led_state = OFF;
 const OS_QueueHd stdin_qhd = OS_TaskStdInGet(OS_THIS_TASK);
 OS_Message* msg_p;// = OS_MessageCreate(OS_MSG_APP, sizeof(task_args), OS_BLOCK, &task_args);
@@ -81,9 +76,9 @@ const OS_Signal signal = OS_SignalCreate(OS_SIG_APP, 0);
 //    OS_MessageSend(a_ko_qhd, msg_p, 100, OS_MSG_PRIO_NORMAL);
 
 U8 debug_count = (rand() % 6) + 1;
-task_args_p->blink_rate = 1;
+tstor_p->blink_rate = 1;
 	for(;;) {
-        IF_STATUS(OS_MessageReceive(stdin_qhd, &msg_p, task_args_p->blink_rate)) {
+        IF_STATUS(OS_MessageReceive(stdin_qhd, &msg_p, tstor_p->blink_rate)) {
             //OS_LOG_S(D_WARNING, S_UNDEF_MSG);
         } else {
             if (OS_SignalIs(msg_p)) {
@@ -117,7 +112,7 @@ task_args_p->blink_rate = 1;
             }
         }
         led_state = (ON == led_state) ? OFF : ON;
-        OS_DriverWrite(task_args_p->drv_led_user, (void*)&led_state, 1, OS_NULL);
+        OS_DriverWrite(tstor_p->drv_led_user, (void*)&led_state, 1, OS_NULL);
 //        if (!--debug_count) {
 //            while(1) {};
 //        }
@@ -127,7 +122,7 @@ task_args_p->blink_rate = 1;
 /******************************************************************************/
 Status OS_TaskPower(OS_TaskArgs* args_p, const OS_PowerState state)
 {
-TaskArgs* task_args_p = (TaskArgs*)args_p;
+TaskStorage* tstor_p = (TaskStorage*)args_p->stor_p;
 Status s = S_OK;
 
 
@@ -140,8 +135,8 @@ Status s = S_OK;
         case PWR_STARTUP:
             IF_STATUS(s = OS_TaskInit(args_p)) {
             }
-            IF_OK(s = OS_DriverInit(task_args.drv_led_user, OS_NULL)) {
-                IF_STATUS(s = OS_DriverOpen(task_args.drv_led_user, OS_NULL)) {
+            IF_OK(s = OS_DriverInit(tstor_p->drv_led_user, OS_NULL)) {
+                IF_STATUS(s = OS_DriverOpen(tstor_p->drv_led_user, OS_NULL)) {
                 }
             } else {
                 s = (S_INIT == s) ? S_OK : s;
@@ -150,7 +145,7 @@ Status s = S_OK;
         case PWR_OFF:
         case PWR_STOP:
         case PWR_SHUTDOWN: {
-//            IF_STATUS(s = OS_EventDelete(task_args_p->ehd, OS_TIMEOUT_DEFAULT)) {
+//            IF_STATUS(s = OS_EventDelete(tstor_p->ehd, OS_TIMEOUT_DEFAULT)) {
 //                OS_LOG_S(D_WARNING, s);
 //            }
 //            IF_OK(s = OS_DriverClose(task_args.drv_led_user)) {
@@ -162,10 +157,10 @@ Status s = S_OK;
             }
             break;
         case PWR_ON: {
-            ConstStrPtr config_path_p = OS_EnvVariableGet("config_file");
+            ConstStrP config_path_p = OS_EnvVariableGet("config_file");
             Str value[OS_SETTINGS_VALUE_LEN];
             OS_SettingsRead(config_path_p, "Second", "blink_rate", &value[0]);
-            task_args_p->blink_rate = (TimeMs)OS_StrToUL((const char*)&value[0], OS_NULL, 10);
+            tstor_p->blink_rate = (TimeMs)OS_StrToUL((const char*)&value[0], OS_NULL, 10);
 
 //                    OS_SettingsRead(config_path_p, "First", "Val", &value[0]);
 //                    OS_SettingsDelete(config_path_p, "Second", OS_NULL);
@@ -184,8 +179,8 @@ Status s = S_OK;
 //                    }
 //            ConstStr* task_name_server = "A-ko";
 //            const OS_TaskHd a_ko_thd = OS_TaskByNameGet(task_name_server);
-//            task_args_p->a_ko_qhd = OS_TaskStdIoGet(a_ko_thd, OS_STDIO_IN);
-//            IF_STATUS(EventCreate(task_args_p->a_ko_qhd, &task_args_p->ehd)) {
+//            tstor_p->a_ko_qhd = OS_TaskStdIoGet(a_ko_thd, OS_STDIO_IN);
+//            IF_STATUS(EventCreate(tstor_p->a_ko_qhd, &tstor_p->ehd)) {
 //                OS_ASSERT(OS_FALSE);
 //            }
             }
@@ -199,16 +194,16 @@ Status s = S_OK;
 /******************************************************************************/
 Status EventCreate(OS_QueueHd a_ko_qhd, OS_EventHd* ehd_p)
 {
-ConstStrPtr hello_msg = "Hello, world!";
+ConstStrP hello_msg = "Hello, world!";
 const U8 hello_msg_len = strlen(hello_msg) + 1;
-StrPtr hello_msg_p = OS_Malloc(hello_msg_len);
+StrP hello_msg_p = OS_Malloc(hello_msg_len);
 OS_EventItem* ev_item_p;
 Status s;
 
     *ehd_p = OS_NULL;
     OS_StrCpy(hello_msg_p, hello_msg);
     IF_OK(s = OS_EventItemCreate(hello_msg_p, hello_msg_len, &ev_item_p)) {
-        static ConstStrPtr tim_name_p = "EventT";
+        static ConstStrP tim_name_p = "EventT";
         const OS_TimerConfig tim_cfg = {
             .name_p = tim_name_p,
             .slot   = a_ko_qhd,

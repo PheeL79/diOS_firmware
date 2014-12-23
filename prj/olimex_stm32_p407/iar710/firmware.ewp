@@ -174,6 +174,7 @@
           <name>CCDefines</name>
           <state>CM4F</state>
           <state>STM32F407xx</state>
+          <state>ARM_ADS</state>
         </option>
         <option>
           <name>CCPreprocFile</name>
@@ -213,7 +214,7 @@
         </option>
         <option>
           <name>CCDiagSuppress</name>
-          <state>Pe301</state>
+          <state>Pe301,Pa050</state>
         </option>
         <option>
           <name>CCDiagRemark</name>
@@ -304,6 +305,7 @@
           <name>CCIncludePath2</name>
           <state>$PROJ_DIR$\..\..\..\inc</state>
           <state>$PROJ_DIR$\..\..\..\src</state>
+          <state>$PROJ_DIR$\..\..\..\cfg</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\inc</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\src</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\cfg</state>
@@ -321,6 +323,8 @@
           <state>$PROJ_DIR$\..\..\..\ext\diOS\src\hal\bsp\olimex_stm32_p407</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\src\tst</state>
           <state>$PROJ_DIR$\..\..\..\ext\diOS\cfg\olimex_stm32_p407</state>
+          <state>$PROJ_DIR$\..\..\..\ext\mp3\helix\pub</state>
+          <state>$PROJ_DIR$\..\..\..\ext\mp3\helix\real</state>
         </option>
         <option>
           <name>CCStdIncCheck</name>
@@ -345,7 +349,7 @@
         <option>
           <name>CCOptStrategy</name>
           <version>0</version>
-          <state>0</state>
+          <state>2</state>
         </option>
         <option>
           <name>CCOptLevelSlave</name>
@@ -420,7 +424,7 @@
         <option>
           <name>CCOptStrategySlave</name>
           <version>0</version>
-          <state>0</state>
+          <state>2</state>
         </option>
         <option>
           <name>CCGuardCalls</name>
@@ -3827,13 +3831,76 @@
   <group>
     <name>app</name>
     <group>
-      <name>mp3</name>
+      <name>audio</name>
+      <group>
+        <name>mp3</name>
+        <group>
+          <name>helix</name>
+          <file>
+            <name>$PROJ_DIR$\..\..\..\ext\mp3\helix\real\arm\asmpoly_thumb2_iar.s</name>
+          </file>
+          <file>
+            <name>$PROJ_DIR$\..\..\..\ext\mp3\helix\real\bitstream.c</name>
+          </file>
+          <file>
+            <name>$PROJ_DIR$\..\..\..\ext\mp3\helix\real\buffers.c</name>
+          </file>
+          <file>
+            <name>$PROJ_DIR$\..\..\..\ext\mp3\helix\real\dct32.c</name>
+          </file>
+          <file>
+            <name>$PROJ_DIR$\..\..\..\ext\mp3\helix\real\dequant.c</name>
+          </file>
+          <file>
+            <name>$PROJ_DIR$\..\..\..\ext\mp3\helix\real\dqchan.c</name>
+          </file>
+          <file>
+            <name>$PROJ_DIR$\..\..\..\ext\mp3\helix\real\huffman.c</name>
+          </file>
+          <file>
+            <name>$PROJ_DIR$\..\..\..\ext\mp3\helix\real\hufftabs.c</name>
+          </file>
+          <file>
+            <name>$PROJ_DIR$\..\..\..\ext\mp3\helix\real\imdct.c</name>
+          </file>
+          <file>
+            <name>$PROJ_DIR$\..\..\..\ext\mp3\helix\mp3dec.c</name>
+          </file>
+          <file>
+            <name>$PROJ_DIR$\..\..\..\ext\mp3\helix\mp3tabs.c</name>
+          </file>
+          <file>
+            <name>$PROJ_DIR$\..\..\..\ext\mp3\helix\real\scalfact.c</name>
+          </file>
+          <file>
+            <name>$PROJ_DIR$\..\..\..\ext\mp3\helix\real\stproc.c</name>
+          </file>
+          <file>
+            <name>$PROJ_DIR$\..\..\..\ext\mp3\helix\real\subband.c</name>
+          </file>
+          <file>
+            <name>$PROJ_DIR$\..\..\..\ext\mp3\helix\real\trigtabs.c</name>
+          </file>
+        </group>
+      </group>
+      <file>
+        <name>$PROJ_DIR$\..\..\..\src\audio_codec.c</name>
+      </file>
+      <file>
+        <name>$PROJ_DIR$\..\..\..\src\audio_codec_mp3.c</name>
+      </file>
+      <file>
+        <name>$PROJ_DIR$\..\..\..\src\audio_codec_wav.c</name>
+      </file>
     </group>
     <file>
       <name>$PROJ_DIR$\..\..\..\src\os_shell_commands_app.c</name>
     </file>
     <file>
       <name>$PROJ_DIR$\..\..\..\src\task_a_ko.c</name>
+      <excluded>
+        <configuration>Debug FLASH</configuration>
+      </excluded>
     </file>
     <file>
       <name>$PROJ_DIR$\..\..\..\src\task_b_ko.c</name>

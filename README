@@ -1,0 +1,12 @@
+/**************************************************************************//**
+    diOS_firmware - Copyright (C) 2013 - 2014 Alexander (PheeL) Filyanov. 
+    https://github.com/PheeL79/diOS_firmware
+******************************************************************************/
+
+// Introduction ---------------------------------------------------------------
+diOS_firmware is an example firmware project for the diOS
+(aka "digital integration OS").
+
+// Trademarks -----------------------------------------------------------------
+Project is based on the following software:
+- Helix fixed-point MP3 decoder (RealNetworks, 2003)
