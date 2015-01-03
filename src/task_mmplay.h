@@ -10,6 +10,7 @@
 #include "os_audio.h"
 #include "audio_codec.h"
 
+#if (OS_AUDIO_ENABLED)
 //-----------------------------------------------------------------------------
 #define APP_TASK_NAME_MMPLAY    "MMPlay"
 
@@ -25,5 +26,7 @@ enum {
 
 extern OS_TaskConfig task_mmplay_cfg;
 extern ConstStrP mmplay_file_path_str_p;
+
+#endif //(OS_AUDIO_ENABLED)
 
 #endif // _TASK_MMPLAY_H_

@@ -10,3 +10,6 @@ diOS_firmware is an example firmware project for the diOS
 // Trademarks -----------------------------------------------------------------
 Project is based on the following software:
 - Helix fixed-point MP3 decoder (RealNetworks, 2003)
+
+Thanks to:
+watz@gmx.net, Mike Smith (mp3 player)

@@ -8,6 +8,7 @@
 
 #include "audio_codec.h"
 
+#if (OS_AUDIO_ENABLED)
 //------------------------------------------------------------------------------
 #undef malloc
 #undef free
@@ -29,5 +30,7 @@ enum {
 
 //------------------------------------------------------------------------------
 extern const AudioCodecItf audio_codec_mp3;
+
+#endif //(OS_AUDIO_ENABLED)
 
 #endif // _AUDIO_CODEC_MP3_H_

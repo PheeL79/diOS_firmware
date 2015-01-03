@@ -55,7 +55,9 @@ Status APP_Init(void)
 extern const OS_TaskConfig task_a_ko_cfg, task_b_ko_cfg;
 extern Status AudioCodecInit_(void);
 Status s = S_UNDEF;
+#if (OS_AUDIO_ENABLED)
     IF_STATUS(s = AudioCodecInit_()) { return s; }
+#endif //(OS_AUDIO_ENABLED)
     IF_STATUS(s = OS_ShellCommandsAppInit()) { return s; }
     // Add application tasks to the system startup.
 //    IF_STATUS(s = OS_StartupTaskAdd(&task_a_ko_cfg)) { return s; }

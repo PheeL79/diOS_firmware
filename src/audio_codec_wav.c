@@ -8,6 +8,7 @@
 #include "os_file_system.h"
 #include "audio_codec_wav.h"
 
+#if (OS_AUDIO_ENABLED)
 //-----------------------------------------------------------------------------
 #define MDL_NAME                "aud_codec_wav"
 #undef  MDL_STATUS_ITEMS
@@ -132,7 +133,7 @@ const Size header_size = sizeof(AudioFormatHeaderWav);
 }
 
 /*****************************************************************************/
-//static Status IoCtl(const U32 request_id, void* args_p)
+//Status IoCtl(const U32 request_id, void* args_p)
 //{
 //Status s = S_UNDEF;
 //    switch (request_id) {
@@ -143,3 +144,5 @@ const Size header_size = sizeof(AudioFormatHeaderWav);
 //    }
 //    return s;
 //}
+
+#endif //(OS_AUDIO_ENABLED)

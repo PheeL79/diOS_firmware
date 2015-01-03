@@ -13,6 +13,7 @@
 #include "app_common.h"
 #include "task_mmplay.h"
 
+#if (OS_AUDIO_ENABLED)
 //-----------------------------------------------------------------------------
 #define MDL_NAME                "task_mmplay"
 #undef  MDL_STATUS_ITEMS
@@ -76,6 +77,7 @@ OS_TaskConfig task_mmplay_cfg = {
     .name           = APP_TASK_NAME_MMPLAY,
     .func_main      = OS_TaskMain,
     .func_power     = OS_TaskPower,
+    .args_p         = OS_NULL,
     .attrs          = BIT(OS_TASK_ATTR_SINGLE),
     .timeout        = 4,
     .prio_init      = APP_TASK_PRIO_MMPLAY,
@@ -179,11 +181,11 @@ Status s = S_UNDEF;
             if (OS_SignalIs(msg_p)) {
                 switch (OS_SignalIdGet(msg_p)) {
                     case OS_SIG_AUDIO_TX_COMPLETE:
-#if (1 == OS_DEBUG_ENABLED)
+#if (OS_DEBUG_ENABLED)
 {
     HAL_DEBUG_PIN1_TOGGLE();
 }
-#endif //(1 == OS_DEBUG_ENABLED)
+#endif // (OS_DEBUG_ENABLED)
                         decode_audio_buf_out_p  = tstor_p->audio_buf_out_p;
                         play_audio_buf_out_p    = decode_audio_buf_out_p;
                         if (tstor_p->audio_buf_idx) {
@@ -206,11 +208,13 @@ Status s = S_UNDEF;
                             OS_TaskDelete(OS_THIS_TASK);
                         }
                         tstor_p->audio_buf_idx ^= 1; // Switch output buffer.
-#if (1 == OS_DEBUG_ENABLED)
+#if (OS_DEBUG_ENABLED)
 {
     HAL_DEBUG_PIN1_TOGGLE();
 }
-#endif //(1 == OS_DEBUG_ENABLED)
+#endif // (OS_DEBUG_ENABLED)
+                        break;
+                    case OS_SIG_AUDIO_TX_COMPLETE_HALF:
                         break;
                     case OS_SIG_AUDIO_ERROR:
                         OS_LOG_S(D_DEBUG, S_HARDWARE_FAULT);
@@ -389,3 +393,5 @@ const OS_Signal signal = OS_ISR_SignalCreate(OS_SIG_DRV, args_p->signal_id, 0);
         OS_ContextSwitchForce();
     }
 }
+
+#endif //(OS_AUDIO_ENABLED)

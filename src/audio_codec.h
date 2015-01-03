@@ -8,6 +8,7 @@
 
 #include "os_audio.h"
 
+#if (OS_AUDIO_ENABLED)
 //-----------------------------------------------------------------------------
 typedef const void* AudioCodecHd;
 
@@ -99,3 +100,5 @@ AudioCodecHd    AudioCodecGet(const AudioFormat format);
 Status          AudioFileFormatInfoGet(ConstStrP file_path_str_p, AudioFormatInfo* info_p);
 
 #endif // _AUDIO_CODEC_H_
+
+#endif //(OS_AUDIO_ENABLED)

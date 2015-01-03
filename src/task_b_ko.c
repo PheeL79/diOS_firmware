@@ -22,10 +22,10 @@
 //-----------------------------------------------------------------------------
 //Task arguments
 typedef struct {
-    OS_DriverHd             drv_led_user;
-    OS_EventHd              ehd;
-    OS_QueueHd              a_ko_qhd;
-    TimeMs                  blink_rate;
+    OS_DriverHd drv_led_user;
+    OS_EventHd  ehd;
+    OS_QueueHd  a_ko_qhd;
+    OS_TimeMs   blink_rate;
 } TaskStorage;
 
 //------------------------------------------------------------------------------
@@ -33,6 +33,7 @@ const OS_TaskConfig task_b_ko_cfg = {
     .name           = "B-ko",
     .func_main      = OS_TaskMain,
     .func_power     = OS_TaskPower,
+    .args_p         = OS_NULL,
     .attrs          = BIT(OS_TASK_ATTR_RECREATE),
     .timeout        = 4,
     .prio_init      = APP_TASK_PRIO_B_KO,
@@ -160,7 +161,7 @@ Status s = S_OK;
             ConstStrP config_path_p = OS_EnvVariableGet("config_file");
             Str value[OS_SETTINGS_VALUE_LEN];
             OS_SettingsRead(config_path_p, "Second", "blink_rate", &value[0]);
-            tstor_p->blink_rate = (TimeMs)OS_StrToUL((const char*)&value[0], OS_NULL, 10);
+            tstor_p->blink_rate = OS_StrToUL((const char*)&value[0], OS_NULL, 10);
 
 //                    OS_SettingsRead(config_path_p, "First", "Val", &value[0]);
 //                    OS_SettingsDelete(config_path_p, "Second", OS_NULL);

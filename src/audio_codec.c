@@ -13,6 +13,7 @@
 #undef free
 #include "os_memory.h"
 
+#if (OS_AUDIO_ENABLED)
 //-----------------------------------------------------------------------------
 #define MDL_NAME                "audio_codec"
 #undef  MDL_STATUS_ITEMS
@@ -177,3 +178,5 @@ Status AudioCodecIoCtl(const AudioCodecHd codec_hd, const U32 request_id, void* 
     OS_ASSERT_VALUE(((AudioCodecItf*)codec_hd)->IoCtl);
     return ((AudioCodecItf*)codec_hd)->IoCtl(request_id, args_p);
 }
+
+#endif //(OS_AUDIO_ENABLED)

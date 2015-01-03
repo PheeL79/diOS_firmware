@@ -11,6 +11,7 @@
 //-----------------------------------------------------------------------------
 static OS_TaskHd mmplay_thd;
 
+#if (OS_AUDIO_ENABLED)
 //------------------------------------------------------------------------------
 static ConstStr cmd_mmplay[]            = "mmplay";
 static ConstStr cmd_help_brief_mmplay[] = "Play a multimedia file.";
@@ -47,11 +48,15 @@ Status s = S_UNDEF;
     }
     return s;
 }
+#endif //(OS_AUDIO_ENABLED)
 
 //------------------------------------------------------------------------------
 static ConstStr empty_str[] = "";
 static const OS_ShellCommandConfig cmd_cfg_app[] = {
+#if (OS_AUDIO_ENABLED)
     { cmd_mmplay,   cmd_help_brief_mmplay,  empty_str,              OS_ShellCmdMMPlayHandler,       1,    2,      OS_SHELL_OPT_UNDEF  },
+#endif //(OS_AUDIO_ENABLED)
+    0
 };
 
 /******************************************************************************/

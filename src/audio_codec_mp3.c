@@ -9,6 +9,7 @@
 #include "audio_codec_mp3.h"
 #include "mp3dec.h"
 
+#if (OS_AUDIO_ENABLED)
 //-----------------------------------------------------------------------------
 #define MDL_NAME                "aud_codec_mp3"
 #undef  MDL_STATUS_ITEMS
@@ -182,7 +183,7 @@ Size header_size = size;
 }
 
 /*****************************************************************************/
-static Status IoCtl(const U32 request_id, void* args_p)
+Status IoCtl(const U32 request_id, void* args_p)
 {
 Status s = S_UNDEF;
     switch (request_id) {
@@ -197,3 +198,5 @@ Status s = S_UNDEF;
     }
     return s;
 }
+
+#endif //(OS_AUDIO_ENABLED)

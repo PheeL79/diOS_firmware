@@ -50,6 +50,7 @@ const OS_TaskConfig task_a_ko_cfg = {
     .name           = "A-ko",
     .func_main      = OS_TaskMain,
     .func_power     = OS_TaskPower,
+    .args_p         = OS_NULL,
     .attrs          = BIT(OS_TASK_ATTR_RECREATE),
     .timeout        = 1,
     .prio_init      = APP_TASK_PRIO_A_KO,
