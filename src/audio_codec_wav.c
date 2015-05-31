@@ -115,7 +115,7 @@ Status IsFormat(U8* data_in_p, Size size, AudioFormatInfo* info_p)
 const AudioFormatHeaderWav* wav_hdr_p = (AudioFormatHeaderWav*)data_in_p;
 const Size header_size = sizeof(AudioFormatHeaderWav);
     if (header_size > size) {
-        return S_SIZE_MISMATCH;
+        return S_INVALID_SIZE;
     }
     if ((0x46464952 == wav_hdr_p->chunk_id) && (1 == wav_hdr_p->audio_format)) {
         if (OS_NULL != info_p) {

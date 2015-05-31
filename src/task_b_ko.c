@@ -7,13 +7,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "drv_usb.h"
-#include "os_message.h"
-#include "os_debug.h"
 #include "os_timer.h"
-#include "os_event.h"
+#include "os_trigger.h"
 #include "os_driver.h"
 #include "os_memory.h"
-#include "os_signal.h"
 #include "os_settings.h"
 #include "os_environment.h"
 #include "app_common.h"
@@ -22,10 +19,10 @@
 //-----------------------------------------------------------------------------
 //Task arguments
 typedef struct {
-    OS_DriverHd drv_led_user;
-    OS_EventHd  ehd;
-    OS_QueueHd  a_ko_qhd;
-    OS_TimeMs   blink_rate;
+    OS_DriverHd     drv_led_user;
+    OS_TriggerHd    trigger_hd;
+    OS_QueueHd      a_ko_qhd;
+    OS_TimeMs       blink_rate;
 } TaskStorage;
 
 //------------------------------------------------------------------------------
@@ -36,15 +33,15 @@ const OS_TaskConfig task_b_ko_cfg = {
     .args_p         = OS_NULL,
     .attrs          = BIT(OS_TASK_ATTR_RECREATE),
     .timeout        = 4,
-    .prio_init      = APP_TASK_PRIO_B_KO,
-    .prio_power     = APP_TASK_PRIO_PWR_B_KO,
+    .prio_init      = APP_PRIO_TASK_B_KO,
+    .prio_power     = APP_PRIO_PWR_TASK_B_KO,
     .storage_size   = sizeof(TaskStorage),
     .stack_size     = OS_STACK_SIZE_MIN,
     .stdin_len      = OS_STDIN_LEN
 };
 
 //------------------------------------------------------------------------------
-static Status       EventCreate(OS_QueueHd a_ko_qhd, OS_EventHd* ehd_p);
+static Status       EventCreate(OS_QueueHd a_ko_qhd, OS_TriggerHd* trigger_hd_p);
 
 /******************************************************************************/
 Status OS_TaskInit(OS_TaskArgs* args_p)
@@ -88,7 +85,7 @@ tstor_p->blink_rate = 1;
                         debug = OS_SignalDataGet(msg_p);
                         break;
                     default:
-                        OS_LOG_S(D_DEBUG, S_UNDEF_SIG);
+                        OS_LOG_S(D_DEBUG, S_INVALID_SIGNAL);
                         break;
                 }
             } else {
@@ -106,7 +103,7 @@ tstor_p->blink_rate = 1;
 //                        debug = 2;
 //                        break;
                     default:
-                        OS_LOG_S(D_DEBUG, S_UNDEF_MSG);
+                        OS_LOG_S(D_DEBUG, S_INVALID_MESSAGE);
                         break;
                 }
                 OS_MessageDelete(msg_p); // free message allocated memory
@@ -140,20 +137,20 @@ Status s = S_OK;
                 IF_STATUS(s = OS_DriverOpen(tstor_p->drv_led_user, OS_NULL)) {
                 }
             } else {
-                s = (S_INIT == s) ? S_OK : s;
+                s = (S_INITED == s) ? S_OK : s;
             }
             break;
         case PWR_OFF:
         case PWR_STOP:
         case PWR_SHUTDOWN: {
-//            IF_STATUS(s = OS_EventDelete(tstor_p->ehd, OS_TIMEOUT_DEFAULT)) {
+//            IF_STATUS(s = OS_TriggerDelete(tstor_p->trigger_hd, OS_TIMEOUT_DEFAULT)) {
 //                OS_LOG_S(D_WARNING, s);
 //            }
 //            IF_OK(s = OS_DriverClose(task_args.drv_led_user)) {
 //                IF_STATUS(s = OS_DriverDeInit(task_args.drv_led_user)) {
 //                }
 //            } else {
-//                s = (S_INIT == s) ? S_OK : s;
+//                s = (S_INITED == s) ? S_OK : s;
 //            }
             }
             break;
@@ -181,7 +178,7 @@ Status s = S_OK;
 //            ConstStr* task_name_server = "A-ko";
 //            const OS_TaskHd a_ko_thd = OS_TaskByNameGet(task_name_server);
 //            tstor_p->a_ko_qhd = OS_TaskStdIoGet(a_ko_thd, OS_STDIO_IN);
-//            IF_STATUS(EventCreate(tstor_p->a_ko_qhd, &tstor_p->ehd)) {
+//            IF_STATUS(EventCreate(tstor_p->a_ko_qhd, &tstor_p->trigger_hd)) {
 //                OS_ASSERT(OS_FALSE);
 //            }
             }
@@ -193,17 +190,17 @@ Status s = S_OK;
 }
 
 /******************************************************************************/
-Status EventCreate(OS_QueueHd a_ko_qhd, OS_EventHd* ehd_p)
+Status EventCreate(OS_QueueHd a_ko_qhd, OS_TriggerHd* trigger_hd_p)
 {
 ConstStrP hello_msg = "Hello, world!";
 const U8 hello_msg_len = strlen(hello_msg) + 1;
 StrP hello_msg_p = OS_Malloc(hello_msg_len);
-OS_EventItem* ev_item_p;
+OS_TriggerItem* ev_item_p;
 Status s;
 
-    *ehd_p = OS_NULL;
+    *trigger_hd_p = OS_NULL;
     OS_StrCpy(hello_msg_p, hello_msg);
-    IF_OK(s = OS_EventItemCreate(hello_msg_p, hello_msg_len, &ev_item_p)) {
+    IF_OK(s = OS_TriggerItemCreate(hello_msg_p, hello_msg_len, &ev_item_p)) {
         static ConstStrP tim_name_p = "EventT";
         const OS_TimerConfig tim_cfg = {
             .name_p = tim_name_p,
@@ -212,12 +209,12 @@ Status s;
             .period = 10000,
             .options= (OS_TimerOptions)(BIT(OS_TIM_OPT_PERIODIC) | BIT(OS_TIM_OPT_EVENT))
         };
-        const OS_EventConfig cfg = {
+        const OS_TriggerConfig cfg = {
             .timer_cfg_p= &tim_cfg,
             .item_p     = ev_item_p,
-            .state      = OS_EVENT_STATE_UNDEF
+            .state      = OS_TRIGGER_STATE_UNDEF
         };
-        IF_STATUS(s = OS_EventCreate(&cfg, ehd_p)) {
+        IF_STATUS(s = OS_TriggerCreate(&cfg, trigger_hd_p)) {
             OS_LOG_S(D_WARNING, s);
         }
     } else {

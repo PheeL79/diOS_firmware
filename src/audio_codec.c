@@ -70,17 +70,19 @@ Status AudioFileFormatInfoGet(ConstStrP file_path_str_p, AudioFormatInfo* info_p
 {
 #define FILE_BUF_SIZE 0x4800
 OS_FileHd file_hd;
-void* file_buf_p = OS_Malloc(FILE_BUF_SIZE);
+Size file_buf_size = OS_MemoryFreeGet(OS_MEM_HEAP_APP);
+    if (file_buf_size > FILE_BUF_SIZE) { file_buf_size = FILE_BUF_SIZE; }
+void* file_buf_p = OS_MallocEx(file_buf_size, OS_MEM_HEAP_APP);
 Status s = S_UNDEF;
-    if (OS_NULL == info_p) { return s = S_INVALID_REF; }
-    if (OS_NULL == file_buf_p) { return s = S_NO_MEMORY; }
+    if (OS_NULL == info_p) { return s = S_INVALID_PTR; }
+    if (OS_NULL == file_buf_p) { return s = S_OUT_OF_MEMORY; }
     IF_OK(s = OS_FileOpen(&file_hd, file_path_str_p,
                           BIT(OS_FS_FILE_OP_MODE_OPEN_EXISTS) | BIT(OS_FS_FILE_OP_MODE_READ))) {
         IF_OK(s = OS_FileRead(file_hd, file_buf_p, FILE_BUF_SIZE)) {
             IF_OK(s = OS_FileClose(&file_hd)) {
                 AudioCodecHd codec_hd;
                 ConstStrP file_ext_p = OS_StrChr(file_path_str_p, '.');
-                if (file_ext_p) {
+                if (OS_NULL != file_ext_p) {
                     ++file_ext_p;
                     if (!OS_StrCmp(file_ext_p, "wav")) {
                         codec_hd = audio_codecs_v[AUDIO_CODEC_WAV];
@@ -91,7 +93,7 @@ Status s = S_UNDEF;
                         IF_STATUS(s = AudioCodecIsFormat(codec_hd, file_buf_p, FILE_BUF_SIZE, info_p)) {
                             if (S_AUDIO_CODEC_FORMAT_MISMATCH == s) {
                                 //May not enough buffer memory to find out the header format.
-                            } else if (S_SIZE_MISMATCH == s) {
+                            } else if (S_INVALID_SIZE == s) {
                             } else {
                             }
                             OS_LOG_S(D_WARNING, s);
@@ -102,7 +104,7 @@ Status s = S_UNDEF;
             }
         }
     }
-    OS_Free(file_buf_p);
+    OS_FreeEx(file_buf_p, OS_MEM_HEAP_APP);
     return s;
 }
 

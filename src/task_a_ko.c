@@ -7,12 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "os_supervise.h"
-#include "os_message.h"
-#include "os_debug.h"
-#include "os_power.h"
 #include "os_driver.h"
 #include "os_memory.h"
-#include "os_signal.h"
 #include "os_timer.h"
 #include "os_event.h"
 #include "os_environment.h"
@@ -209,7 +205,7 @@ Status s = S_OK;
                     .slot   = tstor_p->stdin_qhd,
                     .id     = 16,
                     .period = 4000,
-                    .options= OS_TIM_OPT_UNDEF
+                    .options= 0
                 };
                 IF_STATUS(s = OS_TimerCreate(&tim_cfg, &tstor_p->timer_power)) {
                     return s;
@@ -271,11 +267,11 @@ void ButtonTamperHandler(TaskStorage* tstor_p)
 /******************************************************************************/
 void ISR_ButtonTamperHandler(void)
 {
-    if (1 == OS_ISR_SignalSend(task_args.stdin_qhd,
-                               OS_SignalCreate(OS_SIG_DRV, OS_EVENT_TAMPER),
-                               OS_MSG_PRIO_HIGH)) {
-        OS_ContextSwitchForce();
-    }
+//    if (1 == OS_ISR_SignalSend(task_args.stdin_qhd,
+//                               OS_SignalCreate(OS_SIG_DRV, OS_EVENT_TAMPER),
+//                               OS_MSG_PRIO_HIGH)) {
+//        OS_ContextSwitchForce();
+//    }
 }
 
 /******************************************************************************/
@@ -311,9 +307,9 @@ void ButtonWakeupHandler(TaskStorage* tstor_p)
 /******************************************************************************/
 void ISR_ButtonWakeupHandler(void)
 {
-    if (1 == OS_ISR_SignalSend(task_args.stdin_qhd,
-                               OS_ISR_SignalCreate(DRV_ID_BUTTON_WAKEUP, OS_SIG_DRV, OS_EVENT_WAKEUP),
-                               OS_MSG_PRIO_HIGH)) {
-        OS_ContextSwitchForce();
-    }
+//    if (1 == OS_ISR_SignalSend(task_args.stdin_qhd,
+//                               OS_ISR_SignalCreate(DRV_ID_BUTTON_WAKEUP, OS_SIG_DRV, OS_EVENT_WAKEUP),
+//                               OS_MSG_PRIO_HIGH)) {
+//        OS_ContextSwitchForce();
+//    }
 }

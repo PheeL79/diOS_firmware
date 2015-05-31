@@ -5,8 +5,6 @@
 *******************************************************************************/
 #include "drv_audio.h"
 #include "os_supervise.h"
-#include "os_debug.h"
-#include "os_signal.h"
 #include "os_audio.h"
 #include "os_environment.h"
 #include "os_task_audio.h"
@@ -80,8 +78,8 @@ OS_TaskConfig task_mmplay_cfg = {
     .args_p         = OS_NULL,
     .attrs          = BIT(OS_TASK_ATTR_SINGLE),
     .timeout        = 4,
-    .prio_init      = APP_TASK_PRIO_MMPLAY,
-    .prio_power     = APP_TASK_PRIO_PWR_MMPLAY,
+    .prio_init      = APP_PRIO_TASK_MMPLAY,
+    .prio_power     = APP_PRIO_PWR_TASK_MMPLAY,
     .storage_size   = sizeof(TaskStorage),
     .stack_size     = OS_STACK_SIZE_MIN,
     .stdin_len      = OS_STDIN_LEN
@@ -122,7 +120,7 @@ Status s = S_UNDEF;
                     tstor_p->audio_buf_in_p = OS_MallocEx(tstor_p->audio_buf_in_size,  AUDIO_BUF_IN_MEMORY);
                     tstor_p->audio_buf_out_p= OS_MallocEx(tstor_p->audio_buf_out_size, AUDIO_BUF_OUT_MEMORY);
                     if ((OS_NULL == tstor_p->audio_buf_in_p) ||
-                        (OS_NULL == tstor_p->audio_buf_out_p)) { return s = S_NO_MEMORY; }
+                        (OS_NULL == tstor_p->audio_buf_out_p)) { return s = S_OUT_OF_MEMORY; }
                     IF_OK(s = OS_FileOpen(&tstor_p->file_hd, file_path_str_p,
                                           BIT(OS_FS_FILE_OP_MODE_OPEN_EXISTS) | BIT(OS_FS_FILE_OP_MODE_READ))) {
                         const OS_AudioDeviceArgsOpen audio_dev_open_args = {
@@ -157,7 +155,7 @@ Status s = S_UNDEF;
                     OS_FreeEx(tstor_p->audio_buf_in_p,  AUDIO_BUF_IN_MEMORY);
                     OS_FreeEx(tstor_p->audio_buf_out_p, AUDIO_BUF_OUT_MEMORY);
                 }
-            } else { s = S_INVALID_REF; }
+            } else { s = S_INVALID_PTR; }
         } else { s = S_MMPLAY_FORMAT_UNSUPPORTED; }
     }
     IF_STATUS(s) { OS_LOG_S(D_WARNING, s); }
@@ -204,7 +202,7 @@ Status s = S_UNDEF;
                             VolumeApply(decode_audio_buf_out_p, tstor_p->audio_buf_out_size_curr,
                                         tstor_p->audio_format_info.audio_info.sample_bits, OS_VolumeGet());
                         } else {
-                            OS_LOG_S(D_CRITICAL, S_HARDWARE_FAULT);
+                            OS_LOG_S(D_CRITICAL, S_HARDWARE_ERROR);
                             OS_TaskDelete(OS_THIS_TASK);
                         }
                         tstor_p->audio_buf_idx ^= 1; // Switch output buffer.
@@ -217,7 +215,7 @@ Status s = S_UNDEF;
                     case OS_SIG_AUDIO_TX_COMPLETE_HALF:
                         break;
                     case OS_SIG_AUDIO_ERROR:
-                        OS_LOG_S(D_DEBUG, S_HARDWARE_FAULT);
+                        OS_LOG_S(D_DEBUG, S_HARDWARE_ERROR);
                         break;
                     case OS_SIG_MMPLAY_PLAY:
                         if (MMPLAY_STATE_STOP == tstor_p->state) {
@@ -253,7 +251,7 @@ Status s = S_UNDEF;
                         } else { s = S_INVALID_STATE; }
                         break;
                     default:
-                        s = S_UNDEF_SIG;
+                        s = S_INVALID_SIGNAL;
                         break;
                 }
                 IF_STATUS(s) {
@@ -262,7 +260,7 @@ Status s = S_UNDEF;
             } else {
                 switch (msg_p->id) {
                     default:
-                        OS_LOG_S(D_DEBUG, S_UNDEF_MSG);
+                        OS_LOG_S(D_DEBUG, S_INVALID_MESSAGE);
                         break;
                 }
                 OS_MessageDelete(msg_p); // free message allocated memory
@@ -370,7 +368,7 @@ Status s = S_UNDEF;
             audio_buf_out_p     += tstor_p->audio_frame_info.buf_out_size;
             audio_buf_out_size  -= tstor_p->audio_frame_info.buf_out_size;
         } else {
-            if ((S_FS_EOF == s) || (S_SIZE_MISMATCH == s)) {
+            if ((S_FS_EOF == s) || (S_INVALID_SIZE == s)) {
                 OS_LOG(D_DEBUG, "End of file");
                 OS_TaskDelete(OS_THIS_TASK);
             }

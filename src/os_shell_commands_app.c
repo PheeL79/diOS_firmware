@@ -23,7 +23,7 @@ static OS_QueueHd mmplay_stdin_qhd;
 const char* file_path_str_p = (char*)argv[0];
 OS_SignalId signal_id = OS_SIG_UNDEF;
 Status s = S_UNDEF;
-    if (!OS_StrCmp("play", file_path_str_p)) {
+    if (0 == OS_StrCmp("play", file_path_str_p)) {
         signal_id = OS_SIG_MMPLAY_PLAY;
     } else if (!OS_StrCmp("pause", file_path_str_p)) {
         signal_id = OS_SIG_MMPLAY_PAUSE;
@@ -38,7 +38,7 @@ Status s = S_UNDEF;
             mmplay_stdin_qhd = OS_TaskStdInGet(mmplay_thd);
             if (OS_NULL == mmplay_stdin_qhd) {
                 OS_TaskDelete(mmplay_thd);
-                s = S_UNDEF_QUEUE;
+                s = S_INVALID_QUEUE;
             }
         }
     }
@@ -56,7 +56,7 @@ static const OS_ShellCommandConfig cmd_cfg_app[] = {
 #if (OS_AUDIO_ENABLED)
     { cmd_mmplay,   cmd_help_brief_mmplay,  empty_str,              OS_ShellCmdMMPlayHandler,       1,    2,      OS_SHELL_OPT_UNDEF  },
 #endif //(OS_AUDIO_ENABLED)
-    0
+    OS_NULL
 };
 
 /******************************************************************************/
@@ -65,8 +65,10 @@ Status OS_ShellCommandsAppInit(void)
     //Create and register file system shell commands
     for (Size i = 0; i < ITEMS_COUNT_GET(cmd_cfg_app, OS_ShellCommandConfig); ++i) {
         const OS_ShellCommandConfig* cmd_cfg_p = &cmd_cfg_app[i];
-        IF_STATUS(OS_ShellCommandCreate(cmd_cfg_p)) {
-            OS_ASSERT(OS_FALSE);
+        if (OS_NULL != cmd_cfg_p->command) {
+            IF_STATUS(OS_ShellCommandCreate(cmd_cfg_p)) {
+                OS_ASSERT(OS_FALSE);
+            }
         }
     }
     return S_OK;

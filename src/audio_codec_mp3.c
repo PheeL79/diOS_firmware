@@ -78,7 +78,7 @@ Status s = S_UNDEF;
     mp3_decoder_hd = MP3InitDecoder(); //Currently supports only one instance!
     if (OS_NULL != mp3_decoder_hd) {
         s = S_OK;
-    } else { s = S_INVALID_REF; }
+    } else { s = S_INVALID_PTR; }
     return s;
 }
 
@@ -90,7 +90,7 @@ Status s = S_UNDEF;
         MP3FreeDecoder(mp3_decoder_hd);
         mp3_decoder_hd = OS_NULL;
         s = S_OK;
-    } else { s = S_INVALID_REF; }
+    } else { s = S_INVALID_PTR; }
     return s;
 }
 
@@ -193,7 +193,7 @@ Status s = S_UNDEF;
             s = S_OK;
             break;
         default:
-            s = S_UNDEF_REQ_ID;
+            s = S_INVALID_REQ_ID;
             break;
     }
     return s;
