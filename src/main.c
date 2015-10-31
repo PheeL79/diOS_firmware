@@ -10,7 +10,7 @@
 #include "os_startup.h"
 #include "version.h"
 #include "os_shell_commands_app.h"
-#if (1 == OS_TEST_ENABLED)
+#if (OS_TEST_ENABLED)
 #include "test_main.h"
 #endif // OS_TEST_ENABLED
 
@@ -31,7 +31,7 @@ void main(void)
 {
     // Init the device and it's applications.
     IF_STATUS(Init()) { HAL_ASSERT(OS_FALSE); }
-    HAL_LOG(D_INFO, "OS scheduler start...");
+    HAL_LOG(L_INFO, "OS scheduler start...");
     OS_SchedulerStart();
     HAL_ASSERT(OS_FALSE);
 }
@@ -64,21 +64,21 @@ Status s = S_UNDEF;
 //    IF_STATUS(s = OS_StartupTaskAdd(&task_a_ko_cfg)) { return s; }
 //    IF_STATUS(s = OS_StartupTaskAdd(&task_b_ko_cfg)) { return s; }
 
-    HAL_LOG(D_INFO, "Application init...");
-    HAL_LOG(D_INFO, "-------------------------------");
-    HAL_LOG(D_INFO, "Firmware: v%d.%d.%d%s-%s",
+    HAL_LOG(L_INFO, "Application init...");
+    HAL_LOG(L_INFO, "-------------------------------");
+    HAL_LOG(L_INFO, "Firmware: v%d.%d.%d%s-%s",
                      version.maj,
                      version.min,
                      version.bld,
                      ver_lbl[version.lbl],
                      version.rev);
-    HAL_LOG(D_INFO, "Built on: %s, %s", __DATE__, __TIME__);
-    HAL_LOG(D_INFO, "-------------------------------");
-#if (1 == OS_TEST_ENABLED)
+    HAL_LOG(L_INFO, "Built on: %s, %s", __DATE__, __TIME__);
+    HAL_LOG(L_INFO, "-------------------------------");
+#if (OS_TEST_ENABLED)
     // Tests.
-    HAL_LOG(D_INFO, "Tests run...\n");
+    HAL_LOG(L_INFO, "Tests run...\n");
     TestsRun();
-    HAL_LOG(D_INFO, "-------------------------------");
+    HAL_LOG(L_INFO, "-------------------------------");
 #endif // OS_TEST_ENABLED
     return s;
 }

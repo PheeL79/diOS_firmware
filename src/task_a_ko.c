@@ -95,7 +95,7 @@ Status s;
 U8 debug_count = (rand() % 17) + 1;
 	for(;;) {
         IF_STATUS(s = OS_MessageReceive(tstor_p->stdin_qhd, &msg_p, OS_BLOCK)) {
-            //OS_LOG_S(D_WARNING, s);
+            //OS_LOG_S(L_WARNING, s);
         } else {
             if (OS_SignalIs(msg_p)) {
                 switch (OS_SignalIdGet(msg_p)) {
@@ -108,7 +108,7 @@ U8 debug_count = (rand() % 17) + 1;
                                 ButtonWakeupHandler(tstor_p);
                                 break;
                             default:
-                                OS_LOG_S(D_DEBUG, S_UNDEF_SIG);
+                                OS_LOG_S(L_DEBUG_1, S_UNDEF_SIG);
                                 break;
                         }
                         break;
@@ -124,24 +124,24 @@ U8 debug_count = (rand() % 17) + 1;
                             OS_EventItem* item_p = OS_EventItemByTimerIdGet(timer_id);
                             if (OS_NULL != item_p) {
                                 IF_OK(s = OS_EventItemLock(item_p, OS_TIMEOUT_MUTEX_LOCK)) {
-                                    OS_LOG(D_INFO, item_p->data_p);
+                                    OS_LOG(L_INFO, item_p->data_p);
                                     IF_STATUS(s = OS_EventItemUnlock(item_p)) {
-                                        OS_LOG_S(D_WARNING, s);
+                                        OS_LOG_S(L_WARNING, s);
                                     }
                                 } else {
-                                    OS_LOG_S(D_WARNING, s);
+                                    OS_LOG_S(L_WARNING, s);
                                 }
                             }
                         }
                         break;
                     case OS_SIG_APP:
                         debug = OS_SignalDataGet(msg_p);
-                        OS_LOG_S(D_DEBUG, S_OK);
+                        OS_LOG_S(L_DEBUG_1, S_OK);
                         break;
                     case OS_SIG_PWR_ACK:
                         break;
                     default:
-                        OS_LOG_S(D_DEBUG, S_UNDEF_SIG);
+                        OS_LOG_S(L_DEBUG_1, S_UNDEF_SIG);
                         break;
                 }
             } else {
@@ -150,7 +150,7 @@ U8 debug_count = (rand() % 17) + 1;
                         debug = 2;
                         break;
                     default:
-                        OS_LOG_S(D_DEBUG, S_UNDEF_MSG);
+                        OS_LOG_S(L_DEBUG_1, S_UNDEF_MSG);
                         break;
                 }
                 OS_MessageDelete(msg_p); // free message allocated memory
@@ -241,7 +241,7 @@ const OS_Signal signal = OS_SignalCreate(OS_SIG_SHUTDOWN, 0);
 /******************************************************************************/
 void ButtonTamperHandler(TaskStorage* tstor_p)
 {
-    OS_LOG(D_WARNING, "Tamper event detected!");
+    OS_LOG(L_WARNING, "Tamper event detected!");
     IF_STATUS(OS_DriverIoCtl(tstor_p->drv_rtc, DRV_REQ_BUTTON_TAMPER_DISABLE, OS_NULL)) { OS_ASSERT(OS_FALSE); }
     //Wait for jitter to calm.
     OS_TaskDelay(100);
@@ -279,9 +279,9 @@ void ButtonWakeupHandler(TaskStorage* tstor_p)
 {
     tstor_p->button_wakeup_state ^= OS_TRUE;
     if (OS_TRUE == tstor_p->button_wakeup_state) {
-        OS_LOG(D_INFO, "Wakeup button pressed");
+        OS_LOG(L_INFO, "Wakeup button pressed");
     } else {
-        OS_LOG(D_INFO, "Wakeup button released");
+        OS_LOG(L_INFO, "Wakeup button released");
     }
     OS_TimerStart(tstor_p->timer_power, 4000);
     //Wait for debounce.

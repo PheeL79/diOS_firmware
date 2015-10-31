@@ -96,10 +96,10 @@ Status s = S_UNDEF;
                             } else if (S_INVALID_SIZE == s) {
                             } else {
                             }
-                            OS_LOG_S(D_WARNING, s);
+                            OS_LOG_S(L_WARNING, s);
                         }
                         IF_STATUS(AudioCodecClose(codec_hd, OS_NULL)) {}
-                    } else { OS_LOG_S(D_WARNING, s); }
+                    } else { OS_LOG_S(L_WARNING, s); }
                 }
             }
         }
@@ -111,7 +111,7 @@ Status s = S_UNDEF;
 /*****************************************************************************/
 Status AudioCodecInit(const AudioCodecHd codec_hd, void* args_p)
 {
-    OS_LOG(D_DEBUG, "Audio codec init");
+    OS_LOG(L_DEBUG_1, "Audio codec init");
     OS_ASSERT_VALUE(codec_hd);
     OS_ASSERT_VALUE(((AudioCodecItf*)codec_hd)->Init);
     return ((AudioCodecItf*)codec_hd)->Init(args_p);
@@ -120,7 +120,7 @@ Status AudioCodecInit(const AudioCodecHd codec_hd, void* args_p)
 /*****************************************************************************/
 Status AudioCodecDeInit(const AudioCodecHd codec_hd, void* args_p)
 {
-    OS_LOG(D_DEBUG, "Audio codec deinit");
+    OS_LOG(L_DEBUG_1, "Audio codec deinit");
     OS_ASSERT_VALUE(codec_hd);
     OS_ASSERT_VALUE(((AudioCodecItf*)codec_hd)->DeInit);
     return ((AudioCodecItf*)codec_hd)->DeInit(args_p);
@@ -129,7 +129,7 @@ Status AudioCodecDeInit(const AudioCodecHd codec_hd, void* args_p)
 /*****************************************************************************/
 Status AudioCodecOpen(const AudioCodecHd codec_hd, void* args_p)
 {
-    OS_LOG(D_DEBUG, "Audio codec open");
+    OS_LOG(L_DEBUG_1, "Audio codec open");
     OS_ASSERT_VALUE(codec_hd);
     OS_ASSERT_VALUE(((AudioCodecItf*)codec_hd)->Open);
     return ((AudioCodecItf*)codec_hd)->Open(args_p);
@@ -138,7 +138,7 @@ Status AudioCodecOpen(const AudioCodecHd codec_hd, void* args_p)
 /*****************************************************************************/
 Status AudioCodecClose(const AudioCodecHd codec_hd, void* args_p)
 {
-    OS_LOG(D_DEBUG, "Audio codec close");
+    OS_LOG(L_DEBUG_1, "Audio codec close");
     OS_ASSERT_VALUE(codec_hd);
     OS_ASSERT_VALUE(((AudioCodecItf*)codec_hd)->Close);
     return ((AudioCodecItf*)codec_hd)->Close(args_p);
@@ -147,7 +147,7 @@ Status AudioCodecClose(const AudioCodecHd codec_hd, void* args_p)
 /*****************************************************************************/
 Status AudioCodecEncode(const AudioCodecHd codec_hd, U8* data_in_p, Size size, void* args_p)
 {
-    OS_LOG(D_DEBUG, "Audio codec encode");
+    OS_LOG(L_DEBUG_1, "Audio codec encode");
     OS_ASSERT_VALUE(codec_hd);
     OS_ASSERT_VALUE(((AudioCodecItf*)codec_hd)->Encode);
     return ((AudioCodecItf*)codec_hd)->Encode(data_in_p, size, args_p);
@@ -157,7 +157,7 @@ Status AudioCodecEncode(const AudioCodecHd codec_hd, U8* data_in_p, Size size, v
 Status AudioCodecDecode(const AudioCodecHd codec_hd, U8* data_in_p, Size size_in,
                         U8* data_out_p, Size size_out, AudioFrameInfo* frame_info_p)
 {
-    OS_LOG(D_DEBUG, "Audio codec decode");
+    OS_LOG(L_DEBUG_1, "Audio codec decode");
     OS_ASSERT_VALUE(codec_hd);
     OS_ASSERT_VALUE(((AudioCodecItf*)codec_hd)->Decode);
     return ((AudioCodecItf*)codec_hd)->Decode(data_in_p, size_in, data_out_p, size_out, frame_info_p);
@@ -166,7 +166,7 @@ Status AudioCodecDecode(const AudioCodecHd codec_hd, U8* data_in_p, Size size_in
 /*****************************************************************************/
 Status AudioCodecIsFormat(const AudioCodecHd codec_hd, U8* data_in_p, Size size, AudioFormatInfo* info_p)
 {
-    OS_LOG(D_DEBUG, "Audio codec is format");
+    OS_LOG(L_DEBUG_1, "Audio codec is format");
     OS_ASSERT_VALUE(codec_hd);
     OS_ASSERT_VALUE(((AudioCodecItf*)codec_hd)->IsFormat);
     return ((AudioCodecItf*)codec_hd)->IsFormat(data_in_p, size, info_p);
@@ -175,7 +175,7 @@ Status AudioCodecIsFormat(const AudioCodecHd codec_hd, U8* data_in_p, Size size,
 /*****************************************************************************/
 Status AudioCodecIoCtl(const AudioCodecHd codec_hd, const U32 request_id, void* args_p)
 {
-    OS_LOG(D_DEBUG, "Audio codec ioctl req: %u", request_id);
+    OS_LOG(L_DEBUG_1, "Audio codec ioctl req: %u", request_id);
     OS_ASSERT_VALUE(codec_hd);
     OS_ASSERT_VALUE(((AudioCodecItf*)codec_hd)->IoCtl);
     return ((AudioCodecItf*)codec_hd)->IoCtl(request_id, args_p);

@@ -648,7 +648,7 @@
       <name>BUILDACTION</name>
       <archiveVersion>1</archiveVersion>
       <data>
-        <prebuild>$PROJ_DIR$\..\..\..\ext\diOS\tls\revision_update.bat $PROJ_DIR$\..\..\..\src</prebuild>
+        <prebuild></prebuild>
         <postbuild>xcopy /y "$PROJ_DIR$\Debug FLASH\Exe\*.bin" $PROJ_DIR$\..\..\..\bin</postbuild>
       </data>
     </settings>
@@ -1054,7 +1054,7 @@
         </option>
         <option>
           <name>OGLastSavedByProductVersion</name>
-          <state>7.10.3.6927</state>
+          <state>7.40.2.8567</state>
         </option>
         <option>
           <name>GeneralEnableMisra</name>
@@ -1601,7 +1601,7 @@
       <name>BUILDACTION</name>
       <archiveVersion>1</archiveVersion>
       <data>
-        <prebuild>$PROJ_DIR$\..\..\..\tls\revision_update.bat $PROJ_DIR$\..\..\..\src\target</prebuild>
+        <prebuild></prebuild>
         <postbuild>xcopy /y "$PROJ_DIR$\Release FLASH\Exe\*.bin" $PROJ_DIR$\..\..\..\bin\target</postbuild>
       </data>
     </settings>
@@ -2007,7 +2007,7 @@
         </option>
         <option>
           <name>OGLastSavedByProductVersion</name>
-          <state>7.10.3.6927</state>
+          <state>7.40.2.8567</state>
         </option>
         <option>
           <name>GeneralEnableMisra</name>
@@ -2560,7 +2560,7 @@
       <name>BUILDACTION</name>
       <archiveVersion>1</archiveVersion>
       <data>
-        <prebuild>$PROJ_DIR$\..\..\..\ext\diOS\tls\revision_update.bat $PROJ_DIR$\..\..\..\src</prebuild>
+        <prebuild></prebuild>
         <postbuild>xcopy /y "$PROJ_DIR$\Debug SRAM\Exe\*.bin" $PROJ_DIR$\..\..\..\bin</postbuild>
       </data>
     </settings>
@@ -2966,7 +2966,7 @@
         </option>
         <option>
           <name>OGLastSavedByProductVersion</name>
-          <state>7.10.3.6927</state>
+          <state>7.40.2.8567</state>
         </option>
         <option>
           <name>GeneralEnableMisra</name>
@@ -3513,7 +3513,7 @@
       <name>BUILDACTION</name>
       <archiveVersion>1</archiveVersion>
       <data>
-        <prebuild>$PROJ_DIR$\..\..\..\tls\revision_update.bat $PROJ_DIR$\..\..\..\src\target</prebuild>
+        <prebuild></prebuild>
         <postbuild>xcopy /y "$PROJ_DIR$\Release SRAM\Exe\*.bin" $PROJ_DIR$\..\..\..\bin\target</postbuild>
       </data>
     </settings>

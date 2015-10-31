@@ -158,7 +158,7 @@ Status s = S_UNDEF;
             } else { s = S_INVALID_PTR; }
         } else { s = S_MMPLAY_FORMAT_UNSUPPORTED; }
     }
-    IF_STATUS(s) { OS_LOG_S(D_WARNING, s); }
+    IF_STATUS(s) { OS_LOG_S(L_WARNING, s); }
     return s;
 }
 
@@ -174,14 +174,14 @@ Status s = S_UNDEF;
     tstor_p->stdin_qhd = OS_TaskStdInGet(OS_THIS_TASK);
 	for(;;) {
         IF_STATUS(OS_MessageReceive(tstor_p->stdin_qhd, &msg_p, OS_BLOCK)) {
-            //OS_LOG_S(D_WARNING, S_UNDEF_MSG);
+            //OS_LOG_S(L_WARNING, S_UNDEF_MSG);
         } else {
             if (OS_SignalIs(msg_p)) {
                 switch (OS_SignalIdGet(msg_p)) {
                     case OS_SIG_AUDIO_TX_COMPLETE:
 #if (OS_DEBUG_ENABLED)
 {
-    HAL_DEBUG_PIN1_TOGGLE();
+    HAL_GPIO_DEBUG_1_TOGGLE();
 }
 #endif // (OS_DEBUG_ENABLED)
                         decode_audio_buf_out_p  = tstor_p->audio_buf_out_p;
@@ -202,20 +202,20 @@ Status s = S_UNDEF;
                             VolumeApply(decode_audio_buf_out_p, tstor_p->audio_buf_out_size_curr,
                                         tstor_p->audio_format_info.audio_info.sample_bits, OS_VolumeGet());
                         } else {
-                            OS_LOG_S(D_CRITICAL, S_HARDWARE_ERROR);
+                            OS_LOG_S(L_CRITICAL, S_HARDWARE_ERROR);
                             OS_TaskDelete(OS_THIS_TASK);
                         }
                         tstor_p->audio_buf_idx ^= 1; // Switch output buffer.
 #if (OS_DEBUG_ENABLED)
 {
-    HAL_DEBUG_PIN1_TOGGLE();
+    HAL_GPIO_DEBUG_1_TOGGLE();
 }
 #endif // (OS_DEBUG_ENABLED)
                         break;
                     case OS_SIG_AUDIO_TX_COMPLETE_HALF:
                         break;
                     case OS_SIG_AUDIO_ERROR:
-                        OS_LOG_S(D_DEBUG, S_HARDWARE_ERROR);
+                        OS_LOG_S(L_DEBUG_1, S_HARDWARE_ERROR);
                         break;
                     case OS_SIG_MMPLAY_PLAY:
                         if (MMPLAY_STATE_STOP == tstor_p->state) {
@@ -255,12 +255,12 @@ Status s = S_UNDEF;
                         break;
                 }
                 IF_STATUS(s) {
-                    OS_LOG_S(D_WARNING, s);
+                    OS_LOG_S(L_WARNING, s);
                 }
             } else {
                 switch (msg_p->id) {
                     default:
-                        OS_LOG_S(D_DEBUG, S_INVALID_MESSAGE);
+                        OS_LOG_S(L_DEBUG_1, S_INVALID_MESSAGE);
                         break;
                 }
                 OS_MessageDelete(msg_p); // free message allocated memory
@@ -304,7 +304,7 @@ Status s = S_UNDEF;
             break;
     }
 //error:
-    IF_STATUS(s) { OS_LOG_S(D_WARNING, s); }
+    IF_STATUS(s) { OS_LOG_S(L_WARNING, s); }
     return s;
 }
 
@@ -347,7 +347,7 @@ void VolumeApply(U8* data_out_p, Size size, const OS_AudioBits bit_rate, const O
         while (size--) {
             *data_out_32p++ *= volume_pct;
         }
-    } else { OS_LOG_S(D_WARNING, S_INVALID_VALUE); }
+    } else { OS_LOG_S(L_WARNING, S_INVALID_VALUE); }
 }
 
 /******************************************************************************/
@@ -369,7 +369,7 @@ Status s = S_UNDEF;
             audio_buf_out_size  -= tstor_p->audio_frame_info.buf_out_size;
         } else {
             if ((S_FS_EOF == s) || (S_INVALID_SIZE == s)) {
-                OS_LOG(D_DEBUG, "End of file");
+                OS_LOG(L_DEBUG_1, "End of file");
                 OS_TaskDelete(OS_THIS_TASK);
             }
         }

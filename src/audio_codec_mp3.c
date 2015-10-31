@@ -129,7 +129,7 @@ Status s = S_OK;
                 size_out   -= frame_size_u8;
             } else {
                 //Check in "os_config.h" for "#define OS_FILE_SYSTEM_WORD_ACCESS 0"!!!
-                OS_LOG_S(D_WARNING, (s = S_AUDIO_CODEC_DECODE_ERROR));
+                OS_LOG_S(L_WARNING, (s = S_AUDIO_CODEC_DECODE_ERROR));
             }
         } else {
             //Try to find next valid frame.

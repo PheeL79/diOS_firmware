@@ -19,7 +19,7 @@
 //-----------------------------------------------------------------------------
 //Task arguments
 typedef struct {
-    OS_DriverHd     drv_led_user;
+    OS_DriverHd     drv_gpio;
     OS_TriggerHd    trigger_hd;
     OS_QueueHd      a_ko_qhd;
     OS_TimeMs       blink_rate;
@@ -47,16 +47,9 @@ static Status       EventCreate(OS_QueueHd a_ko_qhd, OS_TriggerHd* trigger_hd_p)
 Status OS_TaskInit(OS_TaskArgs* args_p)
 {
 TaskStorage* tstor_p = (TaskStorage*)args_p->stor_p;
-Status s;
+Status s = S_OK;
     tstor_p->blink_rate = OS_BLOCK;
-    {
-        const OS_DriverConfig drv_cfg = {
-            .name       = "LED_USR",
-            .itf_p      = drv_led_v[DRV_ID_LED_USER],
-            .prio_power = OS_PWR_PRIO_DEFAULT
-        };
-        IF_STATUS(s = OS_DriverCreate(&drv_cfg, (OS_DriverHd*)&tstor_p->drv_led_user)) { return s; }
-    }
+    tstor_p->drv_gpio = OS_DriverGpioGet();
     return s;
 }
 
@@ -77,7 +70,7 @@ U8 debug_count = (rand() % 6) + 1;
 tstor_p->blink_rate = 1;
 	for(;;) {
         IF_STATUS(OS_MessageReceive(stdin_qhd, &msg_p, tstor_p->blink_rate)) {
-            //OS_LOG_S(D_WARNING, S_UNDEF_MSG);
+            //OS_LOG_S(L_WARNING, S_UNDEF_MSG);
         } else {
             if (OS_SignalIs(msg_p)) {
                 switch (OS_SignalIdGet(msg_p)) {
@@ -85,7 +78,7 @@ tstor_p->blink_rate = 1;
                         debug = OS_SignalDataGet(msg_p);
                         break;
                     default:
-                        OS_LOG_S(D_DEBUG, S_INVALID_SIGNAL);
+                        OS_LOG_S(L_DEBUG_1, S_INVALID_SIGNAL);
                         break;
                 }
             } else {
@@ -95,7 +88,7 @@ tstor_p->blink_rate = 1;
                         const U8 l = BIT_TEST(mouse_p->buttons_bm, BIT(OS_USB_HID_MOUSE_BUTTON_LEFT));
                         const U8 r = BIT_TEST(mouse_p->buttons_bm, BIT(OS_USB_HID_MOUSE_BUTTON_RIGHT));
                         const U8 m = BIT_TEST(mouse_p->buttons_bm, BIT(OS_USB_HID_MOUSE_BUTTON_MIDDLE));
-                        OS_LOG(D_DEBUG, "X:%d, Y:%d, L:%d, M:%d, R:%d",
+                        OS_LOG(L_DEBUG_1, "X:%d, Y:%d, L:%d, M:%d, R:%d",
                                         mouse_p->x, mouse_p->y, l, m, r);
                         }
                         break;
@@ -103,14 +96,14 @@ tstor_p->blink_rate = 1;
 //                        debug = 2;
 //                        break;
                     default:
-                        OS_LOG_S(D_DEBUG, S_INVALID_MESSAGE);
+                        OS_LOG_S(L_DEBUG_1, S_INVALID_MESSAGE);
                         break;
                 }
                 OS_MessageDelete(msg_p); // free message allocated memory
             }
         }
         led_state = (ON == led_state) ? OFF : ON;
-        OS_DriverWrite(tstor_p->drv_led_user, (void*)&led_state, 1, OS_NULL);
+        OS_DriverWrite(tstor_p->drv_gpio, (void*)GPIO_LED_USER, 0, (void*)led_state);
 //        if (!--debug_count) {
 //            while(1) {};
 //        }
@@ -133,18 +126,14 @@ Status s = S_OK;
         case PWR_STARTUP:
             IF_STATUS(s = OS_TaskInit(args_p)) {
             }
-            IF_OK(s = OS_DriverInit(tstor_p->drv_led_user, OS_NULL)) {
-                IF_STATUS(s = OS_DriverOpen(tstor_p->drv_led_user, OS_NULL)) {
-                }
-            } else {
-                s = (S_INITED == s) ? S_OK : s;
+            IF_STATUS(s = OS_DriverOpen(tstor_p->drv_gpio, OS_NULL)) {
             }
             break;
         case PWR_OFF:
         case PWR_STOP:
         case PWR_SHUTDOWN: {
 //            IF_STATUS(s = OS_TriggerDelete(tstor_p->trigger_hd, OS_TIMEOUT_DEFAULT)) {
-//                OS_LOG_S(D_WARNING, s);
+//                OS_LOG_S(L_WARNING, s);
 //            }
 //            IF_OK(s = OS_DriverClose(task_args.drv_led_user)) {
 //                IF_STATUS(s = OS_DriverDeInit(task_args.drv_led_user)) {
@@ -215,10 +204,10 @@ Status s;
             .state      = OS_TRIGGER_STATE_UNDEF
         };
         IF_STATUS(s = OS_TriggerCreate(&cfg, trigger_hd_p)) {
-            OS_LOG_S(D_WARNING, s);
+            OS_LOG_S(L_WARNING, s);
         }
     } else {
-        OS_LOG_S(D_WARNING, s);
+        OS_LOG_S(L_WARNING, s);
     }
     return s;
 }
