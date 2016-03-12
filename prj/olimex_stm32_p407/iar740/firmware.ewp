@@ -3904,9 +3904,6 @@
     </file>
     <file>
       <name>$PROJ_DIR$\..\..\..\src\task_a_ko.c</name>
-      <excluded>
-        <configuration>Debug FLASH</configuration>
-      </excluded>
     </file>
     <file>
       <name>$PROJ_DIR$\..\..\..\src\task_b_ko.c</name>

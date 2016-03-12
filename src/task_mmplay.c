@@ -332,7 +332,7 @@ Status s = S_UNDEF;
 /******************************************************************************/
 void VolumeApply(U8* data_out_p, Size size, const OS_AudioBits bit_rate, const OS_AudioVolume volume)
 {
-    OS_ASSERT_VALUE(OS_NULL != data_out_p);
+    OS_ASSERT_DEBUG(OS_NULL != data_out_p);
     const Float volume_pct = (Float)volume / OS_AUDIO_VOLUME_MAX;
     if (16 == bit_rate) {
         S16* data_out_16p = (S16*)data_out_p;

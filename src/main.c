@@ -66,12 +66,18 @@ Status s = S_UNDEF;
 
     HAL_LOG(L_INFO, "Application init...");
     HAL_LOG(L_INFO, "-------------------------------");
-    HAL_LOG(L_INFO, "Firmware: v%d.%d.%d%s-%s",
+    HAL_LOG(L_INFO, "Firmware: v%d.%d.%d%s-%s %c",
                      version.maj,
                      version.min,
                      version.bld,
                      ver_lbl[version.lbl],
-                     version.rev);
+                     version.rev,
+#ifndef NDEBUG
+                     'd'    //Debug build
+#else
+                     'r'    //Release build
+#endif //NDEBUG
+                     );
     HAL_LOG(L_INFO, "Built on: %s, %s", __DATE__, __TIME__);
     HAL_LOG(L_INFO, "-------------------------------");
 #if (OS_TEST_ENABLED)
