@@ -26,7 +26,6 @@ enum {
 //Task arguments
 typedef struct {
     OS_QueueHd  stdin_qhd;
-    OS_QueueHd  stdout_qhd;
     OS_DriverHd drv_rtc;
     OS_DriverHd drv_button_tamper;
     OS_DriverHd drv_button_wakeup;
@@ -39,7 +38,6 @@ static void     TimerPowerHandler(TaskStorage* tstor_p);
 static void     ButtonTamperHandler(TaskStorage* tstor_p);
 static void     ISR_ButtonTamperHandler(void* args_p);
 static void     ButtonWakeupHandler(TaskStorage* tstor_p);
-static void     ISR_ButtonWakeupHandler(void* args_p);
 
 //------------------------------------------------------------------------------
 const OS_TaskConfig task_a_ko_cfg = {
@@ -87,6 +85,7 @@ void OS_TaskMain(OS_TaskArgs* args_p)
 {
 TaskStorage* tstor_p = (TaskStorage*)args_p->stor_p;
 OS_Message* msg_p;
+const OS_QueueHd stdin_qhd = OS_TaskStdInGet(OS_THIS_TASK);
 volatile int debug = 0;
 Status s;
 
@@ -94,22 +93,24 @@ Status s;
 
 U8 debug_count = (rand() % 17) + 1;
 	for(;;) {
-        IF_STATUS(s = OS_MessageReceive(tstor_p->stdin_qhd, &msg_p, OS_BLOCK)) {
+        IF_STATUS(s = OS_MessageReceive(stdin_qhd, &msg_p, OS_BLOCK)) {
             //OS_LOG_S(L_WARNING, s);
         } else {
             if (OS_SignalIs(msg_p)) {
                 switch (OS_SignalIdGet(msg_p)) {
                     case OS_SIG_DRV:
-                        switch (OS_SignalDataGet(msg_p)) {
-                            case OS_EVENT_TAMPER:
-                                ButtonTamperHandler(tstor_p);
-                                break;
-                            case OS_EVENT_WAKEUP:
-                                ButtonWakeupHandler(tstor_p);
-                                break;
-                            default:
-                                OS_LOG_S(L_DEBUG_1, S_INVALID_SIGNAL);
-                                break;
+                        if (DRV_ID_GPIO == OS_SignalSrcGet(msg_p)) {
+                            switch (OS_SignalDataGet(msg_p)) {
+                                case OS_EVENT_TAMPER:
+                                    ButtonTamperHandler(tstor_p);
+                                    break;
+                                case OS_EVENT_WAKEUP:
+                                    ButtonWakeupHandler(tstor_p);
+                                    break;
+                                default:
+                                    OS_LOG_S(L_DEBUG_1, S_INVALID_SIGNAL);
+                                    break;
+                            }
                         }
                         break;
                     case OS_SIG_TIMER: {
@@ -119,7 +120,7 @@ U8 debug_count = (rand() % 17) + 1;
                         }
                         }
                         break;
-                    case OS_SIG_EVENT: {
+                    case OS_SIG_TRIGGER: {
                         const OS_TimerId timer_id = (OS_TimerId)OS_SignalDataGet(msg_p);
                             OS_TriggerItem* item_p = OS_TriggerItemByTimerIdGet(timer_id);
                             if (OS_NULL != item_p) {
@@ -182,12 +183,12 @@ Status s = S_OK;
             IF_STATUS(s = OS_TimerDelete(tstor_p->timer_power, OS_TIMEOUT_DEFAULT)) {
             }
             tstor_p->timer_power = OS_NULL;
-            IF_OK(s = OS_DriverClose(tstor_p->drv_button_tamper, OS_NULL)) {
-                IF_STATUS(s = OS_DriverDeInit(tstor_p->drv_button_tamper, OS_NULL)) {
-                }
-            } else {
-                s = (S_INITED == s) ? S_OK : s;
-            }
+//            IF_OK(s = OS_DriverClose(tstor_p->drv_button_tamper, OS_NULL)) {
+//                IF_STATUS(s = OS_DriverDeInit(tstor_p->drv_button_tamper, OS_NULL)) {
+//                }
+//            } else {
+//                s = (S_INITED == s) ? S_OK : s;
+//            }
             IF_OK(s = OS_DriverClose(tstor_p->drv_button_wakeup, OS_NULL)) {
                 IF_STATUS(s = OS_DriverDeInit(tstor_p->drv_button_wakeup, OS_NULL)) {
                 }
@@ -205,7 +206,7 @@ Status s = S_OK;
                     .slot   = tstor_p->stdin_qhd,
                     .id     = 16,
                     .period = 4000,
-                    .options= 0
+                    .options= (OS_TimerOptions)0
                 };
                 IF_STATUS(s = OS_TimerCreate(&tim_cfg, &tstor_p->timer_power)) {
                     return s;
@@ -214,22 +215,23 @@ Status s = S_OK;
             IF_OK(s = OS_DriverInit(OS_DriverGpioGet(), (void*)GPIO_BUTTON_WAKEUP)) {
                 const DrvGpioArgsOpen args = {
                     .gpio               = GPIO_BUTTON_WAKEUP,
-                    .isr_callback_fp    = (HAL_ISR_CallbackFunc)ISR_ButtonWakeupHandler,
-                    .args_p             = (void*)tstor_p->stdin_qhd
+                    .signal_id          = OS_SIG_DRV,
+                    .signal_data        = OS_EVENT_WAKEUP,
+                    .slot_qhd           = tstor_p->stdin_qhd
                 };
                 IF_STATUS(s = OS_DriverOpen(OS_DriverGpioGet(), (void*)&args)) {
                 }
             } else {
                 s = (S_INITED == s) ? S_OK : s;
             }
-            IF_OK(s = OS_DriverInit(tstor_p->drv_button_tamper, OS_NULL)) {
-                IF_STATUS(s = OS_DriverOpen(tstor_p->drv_button_tamper, (void*)ISR_ButtonTamperHandler)) {
-                }
-            } else {
-                s = (S_INITED == s) ? S_OK : s;
-            }
+//            IF_OK(s = OS_DriverInit(tstor_p->drv_button_tamper, OS_NULL)) {
+//                IF_STATUS(s = OS_DriverOpen(tstor_p->drv_button_tamper, (void*)ISR_ButtonTamperHandler)) {
+//                }
+//            } else {
+//                s = (S_INITED == s) ? S_OK : s;
+//            }
             IF_OK(s = OS_DriverInit(tstor_p->drv_button_wakeup, OS_NULL)) {
-                IF_STATUS(s = OS_DriverOpen(tstor_p->drv_button_wakeup, (void*)ISR_ButtonWakeupHandler)) {
+                IF_STATUS(s = OS_DriverOpen(tstor_p->drv_button_wakeup, OS_NULL)) {
                 }
             } else {
                 s = (S_INITED == s) ? S_OK : s;
@@ -313,11 +315,4 @@ void ButtonWakeupHandler(TaskStorage* tstor_p)
         }
         state_prev = state;
     }
-}
-
-/******************************************************************************/
-void ISR_ButtonWakeupHandler(void* args_p)
-{
-const OS_Signal signal = OS_ISR_SignalCreate(DRV_ID_BUTTON_WAKEUP, OS_SIG_DRV, OS_EVENT_WAKEUP);
-    OS_ISR_ContextSwitchForce(OS_ISR_SignalSend((OS_QueueHd)args_p, signal, OS_MSG_PRIO_HIGH));
 }
