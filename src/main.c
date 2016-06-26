@@ -63,8 +63,8 @@ Status s = S_UNDEF;
 #endif //(OS_NETWORK_ENABLED)
     IF_STATUS(s = OS_ShellCommandsAppInit()) { return s; }
     // Add application tasks to the system startup.
-    IF_STATUS(s = OS_StartupTaskAdd(&task_a_ko_cfg)) { return s; }
-    IF_STATUS(s = OS_StartupTaskAdd(&task_b_ko_cfg)) { return s; }
+//    IF_STATUS(s = OS_StartupTaskAdd(&task_a_ko_cfg)) { return s; }
+//    IF_STATUS(s = OS_StartupTaskAdd(&task_b_ko_cfg)) { return s; }
 
     HAL_LOG(L_INFO, "Application init...");
     HAL_LOG(L_INFO, "-------------------------------");

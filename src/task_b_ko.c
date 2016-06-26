@@ -157,7 +157,11 @@ Status s = S_OK;
         case PWR_OFF:
         case PWR_STOP:
         case PWR_SHUTDOWN: {
-            IF_STATUS(s = OS_TimerDelete(tstor_p->led_tim_hd, OS_TIMEOUT_DEFAULT)) {
+            IF_OK(s = OS_TimerDelete(tstor_p->led_tim_hd, OS_TIMEOUT_DEFAULT)) {
+                tstor_p->led_tim_hd = OS_NULL;
+                const Gpio gpio_led = GPIO_LED_USER;
+                IF_OK(s = OS_DriverIoCtl(tstor_p->drv_gpio, DRV_REQ_GPIO_CLOSE, (void*)gpio_led)) {
+                }
             }
 //            IF_STATUS(s = OS_TriggerDelete(tstor_p->trigger_hd, OS_TIMEOUT_DEFAULT)) {
 //                OS_LOG_S(L_WARNING, s);
@@ -200,10 +204,10 @@ Status s = S_OK;
 //            IF_STATUS(TriggerCreate(tstor_p->a_ko_qhd, &tstor_p->trigger_hd)) {
 //                OS_ASSERT(OS_FALSE);
 //            }
-            const DrvGpioArgsOpen gpio_open_args = {
-                .gpio = GPIO_LED_USER
+            const DrvGpioArgsIoCtlOpen gpio_open_args = {
+                .gpio = GPIO_LED_USER,
             };
-            IF_OK(s = OS_DriverOpen(tstor_p->drv_gpio, (void*)&gpio_open_args)) {
+            IF_OK(s = OS_DriverIoCtl(tstor_p->drv_gpio, DRV_REQ_GPIO_OPEN, (void*)&gpio_open_args)) {
                 if (OS_NULL == tstor_p->led_tim_hd) {
                     static ConstStrP tim_name_p = "LED";
                     const OS_TimerConfig tim_cfg = {

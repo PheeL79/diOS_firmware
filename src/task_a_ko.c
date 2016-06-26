@@ -190,7 +190,10 @@ Status s = S_OK;
 //                s = (S_INITED == s) ? S_OK : s;
 //            }
             IF_OK(s = OS_DriverClose(tstor_p->drv_button_wakeup, OS_NULL)) {
-                IF_STATUS(s = OS_DriverDeInit(tstor_p->drv_button_wakeup, OS_NULL)) {
+                IF_OK(s = OS_DriverDeInit(tstor_p->drv_button_wakeup, OS_NULL)) {
+                    const Gpio gpio = GPIO_BUTTON_WAKEUP;
+                    IF_OK(s = OS_DriverIoCtl(OS_DriverGpioGet(), DRV_REQ_GPIO_CLOSE, (void*)gpio)) {
+                    }
                 }
             } else {
                 s = (S_INITED == s) ? S_OK : s;
@@ -212,24 +215,16 @@ Status s = S_OK;
                     return s;
                 }
             }
-            IF_OK(s = OS_DriverInit(OS_DriverGpioGet(), (void*)GPIO_BUTTON_WAKEUP)) {
-                const DrvGpioArgsOpen args = {
-                    .gpio               = GPIO_BUTTON_WAKEUP,
-                    .signal_id          = OS_SIG_DRV,
-                    .signal_data        = OS_EVENT_WAKEUP,
-                    .slot_qhd           = tstor_p->stdin_qhd
-                };
-                IF_STATUS(s = OS_DriverOpen(OS_DriverGpioGet(), (void*)&args)) {
-                }
-            } else {
-                s = (S_INITED == s) ? S_OK : s;
+            const DrvGpioArgsIoCtlOpen args = {
+                .gpio               = GPIO_BUTTON_WAKEUP,
+                .signal_id          = OS_SIG_DRV,
+                .signal_data        = OS_EVENT_WAKEUP,
+                .slot_qhd           = tstor_p->stdin_qhd
+            };
+            IF_STATUS(s = OS_DriverIoCtl(OS_DriverGpioGet(), DRV_REQ_GPIO_OPEN, (void*)&args)) {
             }
-//            IF_OK(s = OS_DriverInit(tstor_p->drv_button_tamper, OS_NULL)) {
 //                IF_STATUS(s = OS_DriverOpen(tstor_p->drv_button_tamper, (void*)ISR_ButtonTamperHandler)) {
 //                }
-//            } else {
-//                s = (S_INITED == s) ? S_OK : s;
-//            }
             IF_OK(s = OS_DriverInit(tstor_p->drv_button_wakeup, OS_NULL)) {
                 IF_STATUS(s = OS_DriverOpen(tstor_p->drv_button_wakeup, OS_NULL)) {
                 }
@@ -304,7 +299,7 @@ void ButtonWakeupHandler(TaskStorage* tstor_p)
     // Is button released?
     if (OS_FALSE == tstor_p->button_wakeup_state) {
         static OS_PowerState state_prev = PWR_UNDEF;
-        const OS_PowerState state = OS_PowerStateGet();
+        const OS_PowerState state = (PWR_STARTUP == OS_PowerStateGet()) ? PWR_ON : OS_PowerStateGet();
         IF_STATUS(OS_TimerStop(tstor_p->timer_power, OS_TIMEOUT_DEFAULT)) {
             return;
         }
