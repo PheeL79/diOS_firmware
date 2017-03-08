@@ -3997,19 +3997,19 @@
       <configuration>Release SRAM</configuration>
     </excluded>
     <file>
-      <name>$PROJ_DIR$\..\..\..\ext\diOS\lib\iar740\cm4f_osal_d.a</name>
+      <name>$PROJ_DIR$\..\..\..\ext\diOS\lib\iar780\cm4f_osal_d.a</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\..\..\..\ext\diOS\lib\iar740\cm4f_rtos_d.a</name>
+      <name>$PROJ_DIR$\..\..\..\ext\diOS\lib\iar780\cm4f_rtos_d.a</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\..\..\..\ext\diOS\lib\iar740\olimex_stm32_p407_flash_hal_d.a</name>
+      <name>$PROJ_DIR$\..\..\..\ext\diOS\lib\iar780\olimex_stm32_p407_flash_hal_d.a</name>
       <excluded>
         <configuration>Debug SRAM</configuration>
       </excluded>
     </file>
     <file>
-      <name>$PROJ_DIR$\..\..\..\ext\diOS\lib\iar740\olimex_stm32_p407_sram_hal_d.a</name>
+      <name>$PROJ_DIR$\..\..\..\ext\diOS\lib\iar780\olimex_stm32_p407_sram_hal_d.a</name>
       <excluded>
         <configuration>Debug FLASH</configuration>
       </excluded>
